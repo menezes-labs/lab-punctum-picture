@@ -12,6 +12,10 @@ interface SpatialCarouselProps {
   autoPlay?: boolean;
 }
 
+function bypassImageOptimizer(source: string) {
+  return source.startsWith("/media/");
+}
+
 export function SpatialCarousel({
   images,
   onSelectImage,
@@ -136,6 +140,7 @@ export function SpatialCarousel({
                 alt={image.alt}
                 width={640}
                 height={800}
+                unoptimized={bypassImageOptimizer(image.src)}
                 sizes="(max-width: 699px) calc(100vw - 3rem), (max-width: 1199px) 50vw, 33vw"
                 loading="lazy"
                 decoding="async"
@@ -234,6 +239,7 @@ export function SpatialCarousel({
                   alt={image.alt}
                   width={640}
                   height={900}
+                  unoptimized={bypassImageOptimizer(image.src)}
                   sizes="(max-width: 699px) 230px, (max-width: 1279px) 25vw, 320px"
                   loading="lazy"
                   decoding="async"

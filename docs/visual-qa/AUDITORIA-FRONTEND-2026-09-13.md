@@ -16,10 +16,10 @@ Auditoria da experiência pública, dos fluxos editoriais e dos painéis Admin/S
    - Correção: as três miniaturas passaram a usar o tamanho suportado de `128 px`, com proporção preservada.
    - Resultado validado: nenhuma imagem quebrada em `/servicos` no mobile e no desktop.
 
-3. **Imagens do carrossel fora do pipeline de otimização**
-   - Causa: o carrossel espacial, sua alternativa de movimento reduzido e a fita de filme usavam elementos de imagem sem tamanhos responsivos declarados.
-   - Correção: as imagens passaram pelo componente otimizado, com dimensões e regras `sizes` específicas de cada composição.
-   - Resultado validado: lint sem avisos e imagens carregadas sem alterar a geometria ou a interação do carrossel.
+3. **Imagens quebradas no carrossel publicado**
+   - Causa: o carrossel espacial, sua alternativa de movimento reduzido e a fita de filme não declaravam dimensões responsivas. Ao corrigir isso, o otimizador tentou processar rotas dinâmicas do Studio (`/media/...`) e recusou sete fotografias na produção.
+   - Correção: todas as variantes passaram a declarar dimensões e regras `sizes`; arquivos estáticos continuam otimizados e fotografias administradas pelo Studio ignoram somente esse estágio incompatível, usando a própria rota de mídia responsiva.
+   - Resultado validado: lint sem avisos, nenhuma imagem quebrada e geometria e interação do carrossel preservadas.
 
 4. **Navegação administrativa com recarga completa**
    - Causa: três fluxos internos usavam atribuição direta de URL ao criar ensaio, encerrar sessão e concluir troca de senha.
@@ -75,6 +75,7 @@ Os elementos do carrossel e as lâminas da lente podem ocupar espaço fora do qu
 - Testes: 25 arquivos e 108 testes aprovados.
 - Build de produção Vinext: aprovado.
 - Sitemap local: 30 rotas públicas responderam HTTP 200.
+- Sitemap de produção: 33 URLs únicas responderam HTTP 200.
 - Auditoria das dependências de produção: zero vulnerabilidades conhecidas.
 - Workflow CI: aprovado.
 - Workflow de publicação: aprovado, incluindo migrações, experiência publicada, smoke público e contrato autenticado do Studio.

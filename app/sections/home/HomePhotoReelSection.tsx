@@ -68,6 +68,7 @@ export function HomePhotoReelSection({
                   src={image.src}
                   alt={image.alt}
                   fill
+                  unoptimized={image.src.startsWith("/media/")}
                   sizes="(max-width: 700px) 72vw, 32vw"
                 />
                 <figcaption>
@@ -104,6 +105,7 @@ export function HomePhotoReelSection({
                     alt={image.alt}
                     width={720}
                     height={960}
+                    unoptimized={image.src.startsWith("/media/")}
                     sizes="(max-width: 699px) 78vw, (max-width: 1199px) 52vw, 420px"
                     loading="lazy"
                     className="filmstrip-photo"
