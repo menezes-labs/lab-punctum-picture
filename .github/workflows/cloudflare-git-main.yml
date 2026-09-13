@@ -225,7 +225,7 @@ jobs:
           file /tmp/production-hero.webp | grep -q 'Web/P image'
 
           WWW_STATUS='unavailable'
-          if curl -fsS --connect-timeout 8 --max-time 15 'https://www.punctumpicture.com/api/public/stats' >/tmp/www-stats.json; then
+          if curl -fsSL --connect-timeout 8 --max-time 15 'https://www.punctumpicture.com/api/public/stats' >/tmp/www-stats.json; then
             if jq -e "$EXPECTED_STATS" /tmp/www-stats.json >/dev/null; then
               WWW_STATUS='healthy'
             else

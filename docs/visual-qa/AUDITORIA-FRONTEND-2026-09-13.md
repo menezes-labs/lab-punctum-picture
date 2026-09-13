@@ -76,6 +76,9 @@ Os elementos do carrossel e as lâminas da lente podem ocupar espaço fora do qu
 - Build de produção Vinext: aprovado.
 - Sitemap local: 30 rotas públicas responderam HTTP 200.
 - Auditoria das dependências de produção: zero vulnerabilidades conhecidas.
+- Workflow CI: aprovado.
+- Workflow de publicação: aprovado, incluindo migrações, experiência publicada, smoke público e contrato autenticado do Studio.
+- `www.punctumpicture.com`: redireciona por HTTP 308 para o domínio principal; o smoke foi ajustado para acompanhar esse redirecionamento.
 
 O auditor completo ainda aponta avisos restritos às ferramentas locais Vinext, Drizzle Kit e ao pool de testes da Cloudflare. As correções automáticas propostas substituem essas ferramentas por versões incompatíveis ou beta. Elas não entram no pacote executado pelo site e foram mantidas para evitar uma migração de infraestrutura sem relação com esta entrega.
 
@@ -90,6 +93,6 @@ O auditor completo ainda aponta avisos restritos às ferramentas locais Vinext, 
 - [x] Lint aprovado sem erros ou avisos.
 - [x] Dependências executadas em produção sem vulnerabilidades conhecidas.
 - [x] Todas as URLs do sitemap respondendo localmente.
-- [ ] Commit publicado na `main`.
-- [ ] Workflow de produção aprovado.
-- [ ] Produção conferida após o deploy.
+- [x] Commit publicado na `main`.
+- [x] Workflow de produção aprovado.
+- [x] Produção conferida após o deploy.
