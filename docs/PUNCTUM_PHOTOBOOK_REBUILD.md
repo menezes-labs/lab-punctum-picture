@@ -6,7 +6,7 @@ Frontend Director: APPROVED (candidato 4006772, 2026-09-09). Publicado e verific
 
 ## Reconhecimento verificado
 
-- Fonte: GitHub `menezesx2k26-byte/Punctum-Picture`, main `38c43d1294914209ea640ef803c0e7bb143d82b5`. A cópia Sites parava em `948a28a`; atualizada por bundle verificado antes de criar branch.
+- Fonte: GitHub `menezes-labs/lab-punctum-picture`, main `38c43d1294914209ea640ef803c0e7bb143d82b5`. A cópia Sites parava em `948a28a`; atualizada por bundle verificado antes de criar branch.
 - Branch isolada: `feat/punctum-photobook-redesign-20260908`, checkout `/workspace/sites/punctum-picture`.
 - Pasta antiga no Desktop tem exclusões preexistentes. Preservada. Pasta Documents está limpa na main.
 - PR #2 de upload está aberto como draft; implementação equivalente foi integrada por #3/#4. Não interferir.
@@ -56,7 +56,7 @@ Não alterar contratos de API, esquema/migrations, dados de produção, Worker, 
 | Gate | Evidência | Estado |
 | --- | --- | --- |
 | Funcional | Navegação HTTPS; filtro mobile; lightbox/setas/Escape/foco; formulário enviado e limpo apenas no D1 local isolado; 20 rotas HTTP 200 + 2 HTTP 404 esperados | PASS |
-| Engenharia | Typecheck, lint, 100 testes / 22 arquivos, build local e Windows; CI [34376688734](https://github.com/menezesx2k26-byte/Punctum-Picture/actions/runs/34376688734) | PASS |
+| Engenharia | Typecheck, lint, 100 testes / 22 arquivos, build local e Windows; CI [34376688734](https://github.com/menezes-labs/lab-punctum-picture/actions/runs/34376688734) | PASS |
 | Visual | Cloud Browser: home, portfólio, arquivo, ensaios horizontal/vertical e série de 52 fotos, contato, serviço e cidade; antes/depois desktop + mobile | PASS |
 | Responsividade | 360, 390, 768, desktop ~1363 e 1920 px. 1920 inspecionado em frame com viewport real, reduzido visualmente para caber na captura; sem overflow do documento | PASS |
 | UX/acessibilidade | Skip link visível com Tab; outline; dialog modal, foco contido/restaurado, Escape e setas; alvos principais ≥44 px; feedback de envio e disabled; reduced-motion no CSS/carrossel | PASS |
@@ -67,7 +67,7 @@ Não alterar contratos de API, esquema/migrations, dados de produção, Worker, 
 
 [Comparação visual com capturas originais](visual-qa/comparison.html) · [Smokes de rotas](visual-qa/route-smoke-preview.json) · [Medições de recursos](visual-qa/performance-preview.json).
 
-Preview final: https://1c082973-punctum-picture-migration.menezesx2k26.workers.dev · versão `1c082973-9926-4cc3-9ae0-807778024558`. Upload de versão sem trocar tráfego de produção, migrations ou triggers. Canonicals mantidos em punctumpicture.com; preview noindex. PR [#7](https://github.com/menezesx2k26-byte/Punctum-Picture/pull/7).
+Preview final: https://1c082973-punctum-picture-migration.menezesx2k26.workers.dev · versão `1c082973-9926-4cc3-9ae0-807778024558`. Upload de versão sem trocar tráfego de produção, migrations ou triggers. Canonicals mantidos em punctumpicture.com; preview noindex. PR [#7](https://github.com/menezes-labs/lab-punctum-picture/pull/7).
 
 ## Revisão final do Director
 
@@ -97,7 +97,7 @@ A sessão de preview saudável anterior foi encerrada durante o intervalo da con
 
 ## Verificação publicada — 2026-09-09
 
-O [PR #7](https://github.com/menezesx2k26-byte/Punctum-Picture/pull/7) foi integrado como `2a310b03c2b05b42716eeeb04c3980ef05b7f226`. O [deploy 34378054225](https://github.com/menezesx2k26-byte/Punctum-Picture/actions/runs/34378054225) e a [CI 34378054129](https://github.com/menezesx2k26-byte/Punctum-Picture/actions/runs/34378054129) concluíram com sucesso. O pipeline confirmou hero WebP, API pública e Studio autenticado. Resultado sanitizado persistido pelo próprio workflow em requests/cloudflare-git-deploy-result.json.
+O [PR #7](https://github.com/menezes-labs/lab-punctum-picture/pull/7) foi integrado como `2a310b03c2b05b42716eeeb04c3980ef05b7f226`. O [deploy 34378054225](https://github.com/menezes-labs/lab-punctum-picture/actions/runs/34378054225) e a [CI 34378054129](https://github.com/menezes-labs/lab-punctum-picture/actions/runs/34378054129) concluíram com sucesso. O pipeline confirmou hero WebP, API pública e Studio autenticado. Resultado sanitizado persistido pelo próprio workflow em requests/cloudflare-git-deploy-result.json.
 
 [Smoke independente de produção](visual-qa/route-smoke-production.json): 22 respostas 200 e dois 404 esperados; 192 fotos, 16 ensaios, sete categorias. Canonicals corretos e sem noindex no domínio principal. Inclui seis serviços, cinco cidades, ensaio curto e ensaio de 52 fotografias. Cloud Browser confirmou a home publicada, navegação para portfólio, filtro Música com três ensaios e contato. Nenhuma imagem carregada falhou; nenhum erro de aplicação no console (mensagens da extensão do ambiente excluídas). Formulário de produção não foi enviado.
 
