@@ -1,0 +1,21 @@
+name: Temporary Gabriel Ops Cron Proof
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read cron-updated GitHub snapshot
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          NS='bf1a8d43e86048ea822af92a744f8ec9'
+          curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces/$NS/values/latest%3Agithub" -o /tmp/github.json
+          OBSERVED="$(jq -r '.observedAt' /tmp/github.json)"
+          node -e "if (Date.parse(process.argv[1]) <= Date.parse('2026-09-17T21:29:13Z')) process.exit(1)" "$OBSERVED"
+          jq '{source,observedAt,repositoryCount:(.payload.repositories|length)}' /tmp/github.json
