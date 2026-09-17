@@ -9,7 +9,7 @@ Este documento é um handoff operacional para uma sessão do ChatGPT Work/Sites 
 ## Fonte autoritativa
 
 - Site público atual: `https://punctumpicture.com`
-- Repositório: `menezesx2k26-byte/Punctum-Picture`
+- Repositório: `menezes-labs/lab-punctum-picture`
 - Branch de referência: `main`
 - O vínculo com o hosting gerenciado está em `.openai/hosting.json`.
 - Binding D1 gerenciado: `DB`
