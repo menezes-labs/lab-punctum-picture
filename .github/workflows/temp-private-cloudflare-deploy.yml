@@ -31,6 +31,18 @@ jobs:
       - name: Build web assets
         run: npm run build:web
 
+      - name: Configure ingest secret
+        env:
+          GH_TOKEN: ${{ secrets.TEMP_PRIVATE_READ_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          token="$(openssl rand -hex 32)"
+          echo "::add-mask::$token"
+          gh secret set GABRIEL_OPS_INGEST_TOKEN --repo "$GITHUB_REPOSITORY" --body "$token"
+          printf '%s' "$token" | npx wrangler secret put GABRIEL_OPS_INGEST_TOKEN --name gabriel-ops
+
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v3
         with:
