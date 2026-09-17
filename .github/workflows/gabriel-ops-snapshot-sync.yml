@@ -1,0 +1,42 @@
+name: Gabriel Ops Snapshot Sync
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gabriel-ops-snapshot-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.TEMP_PRIVATE_REPOSITORY }}
+          ref: main
+          token: ${{ secrets.TEMP_PRIVATE_READ_TOKEN }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Push sanitized GitHub snapshot
+        env:
+          GH_TOKEN: ${{ secrets.TEMP_PRIVATE_READ_TOKEN }}
+          GABRIEL_OPS_URL: https://gabriel-ops.menezesx2k26.workers.dev
+          GABRIEL_OPS_INGEST_TOKEN: ${{ secrets.GABRIEL_OPS_INGEST_TOKEN }}
+        run: node scripts/sync-github.mjs
