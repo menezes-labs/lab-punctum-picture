@@ -39,4 +39,5 @@ jobs:
           GH_TOKEN: ${{ secrets.TEMP_PRIVATE_READ_TOKEN }}
           GABRIEL_OPS_URL: https://gabriel-ops.menezesx2k26.workers.dev
           GABRIEL_OPS_INGEST_TOKEN: ${{ secrets.GABRIEL_OPS_INGEST_TOKEN }}
+          GABRIEL_OPS_SKIP_ENTERPRISE_AUDIT: '1'
         run: node scripts/sync-github.mjs
