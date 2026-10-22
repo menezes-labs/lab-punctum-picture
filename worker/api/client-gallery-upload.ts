@@ -5,9 +5,10 @@ import {
   getReadyGalleryImage,
 } from "../client/repository";
 import { base64Url } from "../client/passwords";
+import { requireClientSessionSecret } from "../client/secret";
 import { privateJson } from "../client/response";
 import { assertAllowedOrigin, requireAdmin } from "../utils/auth";
-import { requireDb, requireOriginals, requiredEnvString } from "../utils/env";
+import { requireDb, requireOriginals } from "../utils/env";
 import { AppError } from "../utils/errors";
 import { parseJson } from "../client/validation";
 import { writeAudit } from "../utils/audit";
@@ -26,7 +27,7 @@ type IntentRow = {
 async function signature(intent: IntentRow, env: Env) {
   const key = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(requiredEnvString(env, "CLIENT_SESSION_SECRET")),
+    new TextEncoder().encode(requireClientSessionSecret(env)),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
