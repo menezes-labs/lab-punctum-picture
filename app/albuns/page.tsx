@@ -1,2 +1,4 @@
 import { ClientLibrary } from "./components/ClientLibrary";
-export default function ClientAlbumsPage(){return <ClientLibrary/>;}
+export default function ClientAlbumsPage() {
+  return <ClientLibrary />;
+}

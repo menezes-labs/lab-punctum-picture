@@ -23,19 +23,23 @@ Smoke executado com Vite + Worker + vinext, usando somente dados locais:
 
 ## Verificações automatizadas
 
-Base antes da implementação: 108 testes em 25 arquivos, todos aprovados. Validação final: **140 testes aprovados em 36 arquivos**; npm run typecheck, npm run lint e npm run build concluídos com código 0. Lint sem erros nem avisos. Build emite apenas a observação já existente do vinext sobre classificação estática de rotas dinâmicas.
+Base antes da implementação: 108 testes em 25 arquivos, todos aprovados. Validação final: **142 testes aprovados em 37 arquivos**; npm run typecheck, npm run lint e npm run build concluídos com código 0. Lint sem erros nem avisos. Build emite apenas a observação já existente do vinext sobre classificação estática de rotas dinâmicas.
 
 Revisão independente identificou três problemas importantes: PATCH concorrente poderia restaurar download revogado; parser confiava somente no Content-Length; limpeza não retomava após falha na exclusão. Cada problema teve reprodução RED e correção GREEN: atualização apenas de campos fornecidos, leitura JSON com limite real de 64 KiB e retomada de intents expirados até confirmar exclusão. O completed_at de um intent expired registra a conclusão da limpeza; de completed, registra a conclusão do upload.
 
-Também foram corrigidos e cobertos por testes os cabeçalhos de redirecionamentos privados no entrypoint de produção, alertas de erro de favoritos dentro do dialog e as FKs compostas equivalentes no ORM. A revisão não encontrou divulgação de mídia entre clientes. Formatação mais extensa de alguns arquivos permanece melhoria de manutenção, sem efeito funcional.
+Também foram corrigidos e cobertos por testes os cabeçalhos de redirecionamentos privados no entrypoint de produção, alertas de erro de favoritos dentro do dialog e as FKs compostas equivalentes no ORM. A revisão não encontrou divulgação de mídia entre clientes. Os arquivos do módulo receberam formatação consistente após a revisão.
 
 Regressões existentes immersive-policy, portfolio, home-render-plan e deploy-workflow aprovadas. Nenhuma alteração em PhotoCarousel.tsx, HomeExperience.tsx, globals.css, app/lib/portfolio.ts ou assets públicos. Logo, o autorretrato vigente é mantido exatamente como encontrado na main.
 
 ## Pendências de homologação
 
-- QA visual real 360/390/768/desktop, teclado/foco/Escape/setas e aparelhos Android Chrome/iPhone Safari. O navegador local não estava instalado e o download forneceu arquivo inválido; não há capturas aprovadas nem alegação de QA visual concluído.
+- A tela de entrada foi inspecionada no Chrome desktop pelo preview interno. Permanecem QA autenticado, 360/390/768, teclado/foco/Escape/setas e aparelhos Android Chrome/iPhone Safari; não se afirma homologação visual completa.
 - Deploy em preview isolado, smoke externo e restauração de D1/R2 em preview. Migrations locais 0001–0009 foram aplicadas com sucesso; isso não prova restauração remota.
 - Política de retenção e aprovação do procedimento LGPD pelo estúdio, conforme runbook.
 - Aprovação explícita para merge/main e ativação da flag. A implementação não executa esses passos.
 
 Decisão atual: código para revisão; **NO-GO para ativação em produção** até fechamento dos gates acima. Rollback é desligar a flag, sem apagar tabelas ou originais.
+
+## Piloto remoto reproduzível
+
+O workflow Deploy, ambiente preview, executa scripts/private-galleries-preview.mjs exclusivamente no GitHub Actions. Cria recursos punctum-picture-albums-qa próprios, aplica migrations em dois D1 e usa três buckets privados. O piloto valida dez uploads, acesso privado, favoritos, downloads, revogação e restauração de todas as linhas e originais prontos. A cópia R2 é comparada byte a byte, e revogar a conta somente na origem comprova a troca para os bindings restaurados. O relatório público contém apenas resultados e identificadores de infraestrutura; senhas e sessões ficam mascaradas. Execução remota ainda pendente nesta revisão.

@@ -41,3 +41,7 @@ Limites de JSON privado são verificados pelos bytes lidos, inclusive sem Conten
 5. Corrigir em branch isolada e repetir QA. Não reverter migration com DROP. A restauração e a reabertura de acesso requerem decisão do responsável.
 
 Uploads abandonados expiram e a limpeza existente remove apenas objetos não prontos após a janela configurada; fotos prontas e favoritas permanecem.
+
+## Workflow de homologação isolada
+
+Executar Deploy (deploy.yml) na branch de revisão com environment=preview. Exige os secrets CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN e CLOUDFLARE_D1_API_TOKEN no ambiente preview/repositório. O script recusa outros accounts, IDs de D1 de produção e execução fora do GitHub Actions; substitui rotas, bindings, segredos e cron. Nenhum recurso de produção é reutilizado. O artifact private-galleries-preview-report contém somente o JSON sanitizado, sem originais, senhas ou cookies. Recursos QA são preservados para inspeção e não contêm clientes reais.
