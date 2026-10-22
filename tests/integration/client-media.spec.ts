@@ -234,7 +234,8 @@ describe("private media authorization", () => {
   beforeAll(bootstrapPrivateDb);
 
   it("uses R2 metadata only for authorized HEAD requests", async () => {
-    const gallery = await seedGallery(await seedClient());
+    const owner = await seedClient();
+    const gallery = await seedGallery(owner);
     const imageId = await seedReadyImage(gallery);
     const stored = await env.DB.prepare(
       "SELECT storage_key AS storageKey FROM client_gallery_images WHERE id=?",
@@ -285,6 +286,40 @@ describe("private media authorization", () => {
         preset === "download" ? "attachment" : "inline",
       );
     }
+    const clientPath =
+      "http://localhost:8787/api/client/galleries/" +
+      gallery +
+      "/images/" +
+      imageId;
+    const unauthorizedUrl = new URL(clientPath + "/gallery");
+    const unauthorized = await handlePrivateGalleryRoutes(
+      new Request(unauthorizedUrl, { method: "HEAD" }),
+      unauthorizedUrl,
+      isolated,
+    );
+    expect(unauthorized?.status).toBe(404);
+    const validCookie =
+      "punctum_client_session=" +
+      (await createClientSession({ id: owner, sessionVersion: 1 }, env));
+    const downloadUrl = new URL(clientPath + "/download");
+    const deniedDownload = await handlePrivateGalleryRoutes(
+      new Request(downloadUrl, {
+        method: "HEAD",
+        headers: { Cookie: validCookie },
+      }),
+      downloadUrl,
+      isolated,
+    );
+    expect(deniedDownload?.status).toBe(403);
+    const authorized = await handlePrivateGalleryRoutes(
+      new Request(unauthorizedUrl, {
+        method: "HEAD",
+        headers: { Cookie: validCookie },
+      }),
+      unauthorizedUrl,
+      isolated,
+    );
+    expect(authorized?.status).toBe(200);
   });
 
   it("authorizes every photo/download and immediately denies cross-client, revoked and unpublished access", async () => {
