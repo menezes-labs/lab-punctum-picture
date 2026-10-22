@@ -62,3 +62,14 @@ A consulta somente leitura das assinaturas confirmou ausência de Workers Paid (
 | Restauração D1/R2 e comparação de originais | Implementada; execução remota pendente |
 
 Não houve merge ou deploy em produção. A homologação completa depende da autorização comercial para Workers Paid e da nova execução do piloto, além dos demais gates documentados. O código temporário do ensaio visual foi removido; nenhuma fixture de autenticação foi publicada. A captura do navegador não sincronizou com o workspace e não é apresentada como artifact disponível.
+
+## Continuação do handoff — revisão de segurança (2026-10-22)
+
+A PR #13 permanece em draft, sem merge e com PRIVATE_GALLERIES_ENABLED=false em produção. A conta Cloudflare e o Worker isolado de QA foram identificados por consulta somente leitura; nenhum billing, secret, binding ou Worker foi modificado nesta retomada.
+
+- O workflow manual deploy.yml passou a exigir `github.ref == refs/heads/main` antes de qualquer deploy para environment=production, além da frase de confirmação já exigida. A branch de revisão não pode mais realizar este deploy manual acidentalmente.
+- A validação de CLIENT_SESSION_SECRET foi centralizada para sessões e tokens de upload: mínimo de 32 bytes UTF-8 e valor distinto do ADMIN_SESSION_SECRET, com testes de regressão.
+- CI da primeira correção, após commits 5523dfb/8ca16c1: [39859102047](https://github.com/menezesx2k26-byte/lab-punctum-picture/actions/runs/39859102047), sucesso.
+- A nova rodada de testes da validação do segredo exige CI verde no HEAD antes de considerar o gate de código atualizado.
+
+**NO-GO mantido:** não há evidência de Workers Paid ativo nesta retomada, nem sucesso de troca de senha/upload/restauração no edge após o erro `exceededCpu`. A execução anterior [39821485840](https://github.com/menezesx2k26-byte/lab-punctum-picture/actions/runs/39821485840) continua sendo o último piloto remoto documentado. Faltam QA autenticado nas larguras 360/390/768 e em Android/iPhone reais, política de retenção LGPD aprovada e autorização explícita de merge e produção. Não reduzir PBKDF2/310000 para contornar o plano atual.
