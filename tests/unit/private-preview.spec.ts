@@ -25,6 +25,7 @@ describe("isolated gallery preview", () => {
         origin: "https://preview.example.workers.dev",
       },
     );
+    expect(config.limits.cpu_ms).toBe(2000);
     expect(config.name).toBe(PRIVATE_PREVIEW_NAMES.worker);
     expect(config.routes).toEqual([]);
     expect(config.triggers.crons).toEqual([]);

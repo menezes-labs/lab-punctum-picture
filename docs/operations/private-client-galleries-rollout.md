@@ -45,3 +45,9 @@ Uploads abandonados expiram e a limpeza existente remove apenas objetos não pro
 ## Workflow de homologação isolada
 
 Executar Deploy (deploy.yml) na branch de revisão com environment=preview. Exige os secrets CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN e CLOUDFLARE_D1_API_TOKEN no ambiente preview/repositório. O script recusa outros accounts, IDs de D1 de produção e execução fora do GitHub Actions; substitui rotas, bindings, segredos e cron. Nenhum recurso de produção é reutilizado. O artifact private-galleries-preview-report contém somente o JSON sanitizado, sem originais, senhas ou cookies. Recursos QA são preservados para inspeção e não contêm clientes reais.
+
+## Orçamento de CPU — pré-requisito confirmado
+
+A derivação PBKDF2-SHA256/310000 pode exigir implementação JS no edge, pois o WebCrypto gerenciado limita a chamada nativa a 100000 iterações. O piloto confirmou excesso de CPU no Workers Free durante a troca de senha. Exigir Workers Paid e orçamento de pelo menos 2000 ms por invocação para homologar este módulo. A configuração de preview já declara esse teto; produção permanece sem alteração e com a flag desligada. Antes de ativar em produção, confirmar o plano e orçamento efetivos do Worker de produção.
+
+Habilitar o plano é uma mudança comercial na conta e exige autorização do proprietário: mínimo de US$5/mês mais excedentes conforme https://developers.cloudflare.com/workers/platform/pricing/. R2 Paid não habilita Workers Paid. Após a autorização e ativação do plano, executar novamente Deploy/preview e exigir o relatório passed antes de fechar o gate de restauração. Nunca reduzir o fator de trabalho da senha para fazer o piloto passar no plano gratuito.

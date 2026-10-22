@@ -23,7 +23,7 @@ Smoke executado com Vite + Worker + vinext, usando somente dados locais:
 
 ## Verificações automatizadas
 
-Base antes da implementação: 108 testes em 25 arquivos, todos aprovados. Validação final: **143 testes aprovados em 37 arquivos**; npm run typecheck, npm run lint e npm run build concluídos com código 0. Lint sem erros nem avisos. Build emite apenas a observação já existente do vinext sobre classificação estática de rotas dinâmicas.
+Base antes da implementação: 108 testes em 25 arquivos, todos aprovados. Validação final: **145 testes aprovados em 37 arquivos**; npm run typecheck, npm run lint e npm run build concluídos com código 0. Lint sem erros nem avisos. Build emite apenas a observação já existente do vinext sobre classificação estática de rotas dinâmicas.
 
 Revisão independente identificou três problemas importantes: PATCH concorrente poderia restaurar download revogado; parser confiava somente no Content-Length; limpeza não retomava após falha na exclusão. Cada problema teve reprodução RED e correção GREEN: atualização apenas de campos fornecidos, leitura JSON com limite real de 64 KiB e retomada de intents expirados até confirmar exclusão. O completed_at de um intent expired registra a conclusão da limpeza; de completed, registra a conclusão do upload.
 
@@ -33,8 +33,8 @@ Regressões existentes immersive-policy, portfolio, home-render-plan e deploy-wo
 
 ## Pendências de homologação
 
-- A tela de entrada foi inspecionada no Chrome desktop pelo preview interno. Permanecem QA autenticado, 360/390/768, teclado/foco/Escape/setas e aparelhos Android Chrome/iPhone Safari; não se afirma homologação visual completa.
-- Deploy em preview isolado, smoke externo e restauração de D1/R2 em preview. Migrations locais 0001–0009 foram aplicadas com sucesso; isso não prova restauração remota.
+- A tela de entrada foi inspecionada no Chrome desktop local e remoto. Um ensaio local dos componentes reais, com dez fotos públicas e dados fictícios, confirmou Ivory/Noir/Warm, abertura do dialog, setas, Escape, alternância de luz, favorito e retorno de foco ao botão da foto. Esse ensaio não valida autenticação. Permanecem QA autenticado da UI, 360/390/768 e aparelhos Android Chrome/iPhone Safari; não se afirma homologação visual completa.
+- Conclusão do piloto e restauração de D1/R2 em preview. Deploy isolado, migrations remotas e smoke SSR passaram; a troca de senha bloqueou por CPU antes dos uploads e da restauração.
 - Política de retenção e aprovação do procedimento LGPD pelo estúdio, conforme runbook.
 - Aprovação explícita para merge/main e ativação da flag. A implementação não executa esses passos.
 
@@ -42,6 +42,23 @@ Decisão atual: código para revisão; **NO-GO para ativação em produção** a
 
 ## Piloto remoto reproduzível
 
-O workflow Deploy, ambiente preview, executa scripts/private-galleries-preview.mjs exclusivamente no GitHub Actions. Cria recursos punctum-picture-albums-qa próprios, aplica migrations em dois D1 e usa três buckets privados. O piloto valida dez uploads, acesso privado, favoritos, downloads, revogação e restauração de todas as linhas e originais prontos. A cópia R2 é comparada byte a byte, e revogar a conta somente na origem comprova a troca para os bindings restaurados. O relatório público contém apenas resultados e identificadores de infraestrutura; senhas e sessões ficam mascaradas. Execução remota ainda pendente nesta revisão.
+O workflow Deploy, ambiente preview, executa scripts/private-galleries-preview.mjs exclusivamente no GitHub Actions. Cria recursos punctum-picture-albums-qa próprios, aplica migrations em dois D1 e usa três buckets privados. O piloto valida dez uploads, acesso privado, favoritos, downloads, revogação e restauração de todas as linhas e originais prontos. A cópia R2 é comparada byte a byte, e revogar a conta somente na origem comprova a troca para os bindings restaurados. O relatório público contém apenas resultados e identificadores de infraestrutura; senhas e sessões ficam mascaradas. Conclusão do piloto remoto ainda pendente.
 
 Primeira execução remota: [Actions 39819189535](https://github.com/menezesx2k26-byte/lab-punctum-picture/actions/runs/39819189535). Typecheck, lint, 142 testes e build aprovados; os recursos isolados foram criados e o smoke SSR passou. A criação da conta retornou 500: o log remoto confirmou `Pbkdf2 failed: iteration counts above 100000 are not supported (requested 310000)`. O código mantém PBKDF2-SHA256/310000 e usa @noble/hashes 2.4.0 quando encontra especificamente esse limite; erros criptográficos diferentes continuam falhando. A regressão reproduz o limite remoto e compara os bytes com WebCrypto independente. A [diferença entre workerd local e managed edge está documentada pelo projeto](https://github.com/cloudflare/workerd/issues/1346). Não houve redução do fator de trabalho.
+
+## Bloqueio operacional confirmado no edge
+
+[Execução 39821485840](https://github.com/menezesx2k26-byte/lab-punctum-picture/actions/runs/39821485840), commit d2d00c606cf1fae47ecb4b614688b1c964d212e2: typecheck, lint, **145 testes** e build aprovados. A espera pela propagação validou a sessão administrativa nova. Cadastro fictício, login e bloqueio de álbum antes da primeira troca passaram. A troca de senha retornou 503; Workers Observability registrou `outcome=exceededCpu`, 350 ms de CPU e `Worker exceeded CPU time limit.` em 2026-10-22T17:20:22Z.
+
+A consulta somente leitura das assinaturas confirmou ausência de Workers Paid (R2 Paid já existe e é distinto). A configuração de preview agora declara 2000 ms de CPU; sua aplicação exige Workers Paid. Nenhuma assinatura ou cobrança foi alterada. O fator PBKDF2 permanece 310000, sem redução para contornar o orçamento. [Preços oficiais](https://developers.cloudflare.com/workers/platform/pricing/): Workers Paid tem mínimo de US$5/mês por conta, além de excedentes.
+
+| Gate remoto | Resultado |
+| --- | --- |
+| Dois D1 e três buckets R2 privados, migrations | Aprovado |
+| SSR, headers privados, gate de página e sessão administrativa nova | Aprovado |
+| Cadastro, login e troca obrigatória exigida | Aprovado |
+| Conclusão da troca de senha | Bloqueado por CPU do plano atual |
+| Dez uploads, publicação, favoritos, download e revogação | Aprovados localmente; não executados remotamente nesta tentativa |
+| Restauração D1/R2 e comparação de originais | Implementada; execução remota pendente |
+
+Não houve merge ou deploy em produção. A homologação completa depende da autorização comercial para Workers Paid e da nova execução do piloto, além dos demais gates documentados. O código temporário do ensaio visual foi removido; nenhuma fixture de autenticação foi publicada. A captura do navegador não sincronizou com o workspace e não é apresentada como artifact disponível.

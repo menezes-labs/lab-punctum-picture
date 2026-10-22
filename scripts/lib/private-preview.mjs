@@ -36,6 +36,7 @@ export function privatePreviewConfig(
     name: PRIVATE_PREVIEW_NAMES.worker,
     account_id: "257bca437616da74ece1ce4bbaf0bd89",
     workers_dev: true,
+    limits: { cpu_ms: 2000 },
     preview_urls: false,
     routes: [],
     triggers: { crons: [] },
