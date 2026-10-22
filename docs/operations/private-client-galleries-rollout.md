@@ -18,7 +18,7 @@ Validar UI 360/390/768/desktop, teclado, Escape/setas/foco no visualizador e red
 
 ## Retenção, exportação e exclusão
 
-Antes de ativar produção, o estúdio deve aprovar e registrar prazo de retenção, responsável por pedidos LGPD e prazo de atendimento. Não há purge automático de fotos prontas.
+Antes de ativar produção, o estúdio deve aprovar e registrar prazo de retenção, responsável por pedidos LGPD e prazo de atendimento. Não há purge automático de fotos prontas. A [minuta de decisão LGPD](./private-client-galleries-lgpd-decision.md) inventaria dados, ciclos efetivos de backup e campos ainda pendentes. A minuta **não é uma política aprovada** e não autoriza tratamento adicional ou exclusão.
 
 Exportação assistida: verificar a identidade do titular e autorização do estúdio; exportar somente client_accounts sem hashes/salts, suas galerias/imagens/favoritos e originais correspondentes. Entregar por canal privado autorizado. Não criar links públicos.
 
