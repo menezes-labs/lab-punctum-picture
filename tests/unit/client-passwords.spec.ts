@@ -43,6 +43,8 @@ describe("client credentials", () => {
     try {
       const password = "synthetic edge compatibility password";
       const credential = await hashClientPassword(password);
+      expect(capped).toHaveBeenCalled();
+      capped.mockRestore();
       const key = await crypto.subtle.importKey(
         "raw",
         new TextEncoder().encode(password),
