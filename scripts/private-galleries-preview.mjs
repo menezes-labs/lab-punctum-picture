@@ -4,6 +4,7 @@ import { createHmac, createHash, randomBytes, randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
 import {
   privatePreviewConfig,
+  waitForPreviewStatus,
   PRIVATE_PREVIEW_NAMES as names,
 } from "./lib/private-preview.mjs";
 
@@ -200,11 +201,27 @@ try {
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
-    assert.equal(
-      response.status,
-      expected,
-      method + " " + path + " expected HTTP " + expected,
-    );
+    if (response.status !== expected) {
+      const failure = await response
+        .clone()
+        .json()
+        .catch(() => ({}));
+      const code = failure?.error?.code;
+      const safeCode =
+        typeof code === "string" && /^[A-Z_]+$/.test(code)
+          ? " (" + code + ")"
+          : "";
+      throw new Error(
+        method +
+          " " +
+          path +
+          " expected HTTP " +
+          expected +
+          ", received " +
+          response.status +
+          safeCode,
+      );
+    }
     assert.equal(
       response.headers.get("cache-control"),
       "private, no-store",
@@ -225,7 +242,18 @@ try {
   }
   await request("/albuns/entrar", "GET", undefined, "");
   await request("/albuns", "GET", undefined, "", 303);
-  record("deployed SSR login, page gate and private headers");
+  await waitForPreviewStatus({
+    probe: async () =>
+      (
+        await fetch(origin + "/admin/api/clientes", {
+          headers: { Cookie: adminCookie },
+        })
+      ).status,
+    pause: () => sleep(1000),
+  });
+  record(
+    "deployed SSR login, page gate, private headers and rotated admin session",
+  );
   const email = "pilot-" + randomUUID() + "@example.invalid";
   const accountData = await (
     await request(
@@ -458,7 +486,13 @@ try {
   await configure(restored.uuid, true);
   wrangler(["deploy", "--config", generated]);
   // Old cookies must remain valid against the restored credential/session rows.
-  await sleep(2000);
+  await waitForPreviewStatus({
+    probe: async () =>
+      (await fetch(origin + "/api/client/me", { headers: { Cookie: cookie } }))
+        .status,
+    transient: [401],
+    pause: () => sleep(1000),
+  });
   const restoredGallery = await (
     await request(client, "GET", undefined, cookie)
   ).json();

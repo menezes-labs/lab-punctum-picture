@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   privatePreviewConfig,
+  waitForPreviewStatus,
   PRIVATE_PREVIEW_NAMES,
 } from "../../scripts/lib/private-preview.mjs";
 describe("isolated gallery preview", () => {
@@ -76,5 +77,36 @@ describe("isolated gallery preview", () => {
     expect(restored.r2_buckets[0].bucket_name).toBe(
       PRIVATE_PREVIEW_NAMES.restoreOriginals,
     );
+  });
+});
+
+describe("preview propagation gate", () => {
+  it("waits for a newly rotated session before allowing the pilot to continue", async () => {
+    const statuses = [403, 403, 200];
+    let probes = 0,
+      pauses = 0;
+    await waitForPreviewStatus({
+      probe: async () => {
+        probes++;
+        return statuses.shift()!;
+      },
+      pause: async () => {
+        pauses++;
+      },
+    });
+    expect(probes).toBe(3);
+    expect(pauses).toBe(2);
+  });
+  it("fails closed for persistent auth failures and unrelated server errors", async () => {
+    await expect(
+      waitForPreviewStatus({
+        probe: async () => 403,
+        pause: async () => {},
+        attempts: 2,
+      }),
+    ).rejects.toThrow("timed out");
+    await expect(
+      waitForPreviewStatus({ probe: async () => 500, pause: async () => {} }),
+    ).rejects.toThrow("HTTP 500");
   });
 });

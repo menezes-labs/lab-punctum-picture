@@ -69,3 +69,20 @@ export function privatePreviewConfig(
     images: { binding: "IMAGES" },
   };
 }
+
+export async function waitForPreviewStatus({
+  probe,
+  expected = 200,
+  transient = [403],
+  pause,
+  attempts = 30,
+}) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const status = await probe();
+    if (status === expected) return;
+    if (!transient.includes(status))
+      throw new Error("Preview readiness failed: HTTP " + status);
+    if (attempt + 1 < attempts) await pause();
+  }
+  throw new Error("Preview authentication/binding propagation timed out.");
+}
