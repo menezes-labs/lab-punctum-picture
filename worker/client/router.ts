@@ -62,13 +62,9 @@ export async function handlePrivateGalleryRoutes(
         media[3],
         media[4] as "thumb" | "gallery" | "download",
         media[1].startsWith("admin") ? "admin" : "client",
+        request.method === "HEAD",
       );
-      return request.method === "HEAD"
-        ? new Response(null, {
-            status: response.status,
-            headers: response.headers,
-          })
-        : response;
+      return response;
     }
     if (url.pathname.startsWith("/api/client/galleries"))
       await requireClient(request, env, requireDb(env));
