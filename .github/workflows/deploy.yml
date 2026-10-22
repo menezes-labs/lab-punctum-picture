@@ -26,8 +26,15 @@ jobs:
     steps:
       - name: Guard production deploy
         if: inputs.environment == 'production'
+        env:
+          DEPLOY_REF: ${{ github.ref }}
+          PRODUCTION_CONFIRMATION: ${{ inputs.confirm_production }}
         run: |
-          if [ "${{ inputs.confirm_production }}" != "DEPLOY_PRODUCTION" ]; then
+          if [ "$DEPLOY_REF" != "refs/heads/main" ]; then
+            echo "Production bloqueada: execute somente a partir da branch main."
+            exit 1
+          fi
+          if [ "$PRODUCTION_CONFIRMATION" != "DEPLOY_PRODUCTION" ]; then
             echo "Production bloqueada: confirmação explícita ausente."
             exit 1
           fi
