@@ -1,3 +1,6 @@
+import { pbkdf2 } from "@noble/hashes/pbkdf2.js";
+import { sha256 } from "@noble/hashes/sha2.js";
+
 export type ClientCredential = {
   passwordHash: string;
   passwordSalt: string;
@@ -23,18 +26,32 @@ async function derive(password: string, salt: Uint8Array, iterations: number) {
     false,
     ["deriveBits"],
   );
-  return new Uint8Array(
-    await crypto.subtle.deriveBits(
-      {
-        name: "PBKDF2",
-        hash: "SHA-256",
-        salt: new Uint8Array(salt).buffer,
-        iterations,
-      },
-      key,
-      256,
-    ),
-  );
+  try {
+    return new Uint8Array(
+      await crypto.subtle.deriveBits(
+        {
+          name: "PBKDF2",
+          hash: "SHA-256",
+          salt: new Uint8Array(salt).buffer,
+          iterations,
+        },
+        key,
+        256,
+      ),
+    );
+  } catch (error) {
+    // The managed edge has a WebCrypto cap absent in local workerd. Preserve
+    // standard PBKDF2 output and work factor; propagate unrelated crypto errors.
+    if (
+      !(error instanceof Error) ||
+      !error.message.includes("iteration counts above 100000 are not supported")
+    )
+      throw error;
+    return pbkdf2(sha256, new TextEncoder().encode(password), salt, {
+      c: iterations,
+      dkLen: 32,
+    });
+  }
 }
 export function generateTemporaryPassword(): string {
   return base64Url(crypto.getRandomValues(new Uint8Array(24)));
