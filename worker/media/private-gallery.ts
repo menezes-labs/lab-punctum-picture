@@ -17,6 +17,7 @@ export async function servePrivateGalleryImage(
   imageId: string,
   preset: "thumb" | "gallery" | "download",
   audience: "client" | "admin",
+  headOnly = false,
 ): Promise<Response> {
   const missing = () =>
     new AppError(404, "NOT_FOUND", "Recurso não encontrado.");
@@ -46,7 +47,28 @@ export async function servePrivateGalleryImage(
       "DOWNLOAD_DISABLED",
       "O download deste álbum está desativado.",
     );
-  const object = await requireOriginals(env).get(image.storageKey);
+  const bucket = requireOriginals(env);
+  if (headOnly) {
+    if (preset !== "download" && !env.IMAGES)
+      throw new AppError(
+        503,
+        "IMAGE_SERVICE_UNAVAILABLE",
+        "A prévia desta foto está temporariamente indisponível.",
+      );
+    if (!(await bucket.head(image.storageKey))) throw missing();
+    const headers =
+      preset === "download"
+        ? {
+            "Content-Type": image.mimeType,
+            "Content-Disposition": `attachment; filename="foto-${image.id}.${image.mimeType === "image/png" ? "png" : image.mimeType === "image/webp" ? "webp" : "jpg"}"`,
+          }
+        : {
+            "Content-Type": negotiateImageFormat(request.headers.get("Accept")),
+            "Content-Disposition": "inline",
+          };
+    return privateResponse(new Response(null, { status: 200, headers }));
+  }
+  const object = await bucket.get(image.storageKey);
   if (!object) throw missing();
   if (preset === "download")
     return privateResponse(
