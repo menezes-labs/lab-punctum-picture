@@ -29,8 +29,8 @@ export const EDITORIAL_CAROUSEL_IMAGE_IDS = [
 const MARIA_HELENA_EDITORIAL_IMAGE: CarouselImage = {
   id: "editorial-maria-helena",
   number: 1,
-  src: "/photos/p001.jpg",
-  alt: "Maria Helena fotografando com uma câmera",
+  src: "/photos/p001-autorretrato.jpg",
+  alt: "Maria Helena fotografando com uma câmera em um estádio",
   albumSlug: null,
   albumTitle: "Maria Helena",
   category: "Autorretrato",
