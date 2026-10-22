@@ -5,10 +5,13 @@ import { requireClientSessionSecret } from "../../worker/client/secret";
 
 describe("private-gallery session secret gate", () => {
   it("requires at least 32 UTF-8 bytes and separation from the admin key", async () => {
-    const invalid = [
-      { ...env, CLIENT_SESSION_SECRET: "x".repeat(31) },
-      { ...env, CLIENT_SESSION_SECRET: env.ADMIN_SESSION_SECRET },
-    ] as Env[];
+    const invalid: Env[] = [
+      { ...env, CLIENT_SESSION_SECRET: "x".repeat(31) } as Env,
+      {
+        ...env,
+        CLIENT_SESSION_SECRET: Reflect.get(env, "ADMIN_SESSION_SECRET"),
+      } as Env,
+    ];
     for (const candidate of invalid) {
       expect(() => requireClientSessionSecret(candidate)).toThrowError(
         "Configuração de acesso indisponível.",
@@ -28,7 +31,9 @@ describe("private-gallery session secret gate", () => {
   it("accepts a distinct 32-byte minimum and the isolated preview secret", async () => {
     const minimum = { ...env, CLIENT_SESSION_SECRET: "z".repeat(32) } as Env;
     expect(requireClientSessionSecret(minimum)).toHaveLength(32);
-    expect(requireClientSessionSecret(env)).toBe(env.CLIENT_SESSION_SECRET);
+    expect(requireClientSessionSecret(env)).toBe(
+      Reflect.get(env, "CLIENT_SESSION_SECRET"),
+    );
     await expect(
       createClientSession({ id: crypto.randomUUID(), sessionVersion: 1 }, env),
     ).resolves.toContain(".");
