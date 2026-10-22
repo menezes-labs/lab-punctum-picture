@@ -1,5 +1,5 @@
 import { AppError } from "../utils/errors";
-import { requiredEnvString } from "../utils/env";
+import { requireClientSessionSecret } from "./secret";
 import { base64Url, unbase64Url } from "./passwords";
 import { getActiveClient } from "./repository";
 export const CLIENT_SESSION_TTL = 43_200;
@@ -11,13 +11,7 @@ export type ClientIdentity = {
   sessionVersion: number;
 };
 async function key(env: Env) {
-  const secret = requiredEnvString(env, "CLIENT_SESSION_SECRET");
-  if (secret === Reflect.get(env, "ADMIN_SESSION_SECRET"))
-    throw new AppError(
-      503,
-      "CLIENT_SECRET_INVALID",
-      "Configuração de acesso indisponível.",
-    );
+  const secret = requireClientSessionSecret(env);
   return crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
