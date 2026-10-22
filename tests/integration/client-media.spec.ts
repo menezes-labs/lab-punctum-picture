@@ -5,7 +5,9 @@ import {
   seedClient,
   seedGallery,
   privateRequest,
+  seedReadyImage,
 } from "./client-fixture";
+import { handlePrivateGalleryRoutes } from "../../worker/client/router";
 import { createClientSession } from "../../worker/client/auth";
 
 const PNG = Uint8Array.from(
@@ -230,6 +232,61 @@ describe("isolated private uploads", () => {
 
 describe("private media authorization", () => {
   beforeAll(bootstrapPrivateDb);
+
+  it("uses R2 metadata only for authorized HEAD requests", async () => {
+    const gallery = await seedGallery(await seedClient());
+    const imageId = await seedReadyImage(gallery);
+    const stored = await env.DB.prepare(
+      "SELECT storage_key AS storageKey FROM client_gallery_images WHERE id=?",
+    )
+      .bind(imageId)
+      .first<{ storageKey: string }>();
+    expect(stored).not.toBeNull();
+    await env.ORIGINALS.put(stored!.storageKey, PNG, {
+      httpMetadata: { contentType: "image/png" },
+    });
+    const metadataOnlyBucket = new Proxy(env.ORIGINALS, {
+      get(target, key) {
+        if (key === "get")
+          return () => {
+            throw new Error("HEAD must not read original photo bytes");
+          };
+        const value = Reflect.get(target, key);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+    const metadataOnlyImages = {
+      input: () => {
+        throw new Error("HEAD must not transform photo bytes");
+      },
+    };
+    const isolated = {
+      ...env,
+      ORIGINALS: metadataOnlyBucket,
+      IMAGES: metadataOnlyImages,
+    } as unknown as Env;
+    const base =
+      "http://localhost:8787/admin/api/albuns-privados/" +
+      gallery +
+      "/images/" +
+      imageId;
+    for (const preset of ["thumb", "gallery", "download"]) {
+      const url = new URL(base + "/" + preset);
+      const response = await handlePrivateGalleryRoutes(
+        new Request(url, { method: "HEAD" }),
+        url,
+        isolated,
+      );
+      expect(response?.status).toBe(200);
+      expect(response?.body).toBeNull();
+      expect(response?.headers.get("Cache-Control")).toBe("private, no-store");
+      expect(response?.headers.get("X-Robots-Tag")).toContain("noindex");
+      expect(response?.headers.get("Content-Disposition")).toContain(
+        preset === "download" ? "attachment" : "inline",
+      );
+    }
+  });
+
   it("authorizes every photo/download and immediately denies cross-client, revoked and unpublished access", async () => {
     const a = await seedClient();
     const b = await seedClient();
