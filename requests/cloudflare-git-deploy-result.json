@@ -1,7 +1,7 @@
 {
-  "status": "success",
-  "checkedAt": "2026-09-13T11:56:57Z",
-  "sourceCommit": "358c3da9fd0de61ed4d40d7b61fb025e8116384e",
+  "status": "failure",
+  "checkedAt": "2026-10-22T15:55:45Z",
+  "sourceCommit": "4cab7948e6b1b63943ded5f7c03b99dd25b3834b",
   "worker": "punctum-picture-migration",
   "workerUrl": "https://punctum-picture-migration.menezesx2k26.workers.dev",
   "productionUrl": "https://punctumpicture.com",
@@ -20,10 +20,10 @@
     "d1Migrations": "success",
     "generatedConfig": "success",
     "deploy": "success",
-    "publishedExperience": "success",
-    "smoke": "success"
+    "publishedExperience": "failure",
+    "smoke": "skipped"
   },
-  "wwwSmokeStatus": "healthy",
+  "wwwSmokeStatus": "unknown",
   "wwwSmokeRequired": false,
   "d1": "punctum-picture",
   "r2Originals": "punctum-picture-originals",
@@ -31,6 +31,6 @@
   "cloudflareImages": true,
   "cronsEnabled": true,
   "studioContractVerified": true,
-  "publishedExperienceVerified": true,
+  "publishedExperienceVerified": false,
   "customDomainsConfigured": true
 }
