@@ -69,7 +69,7 @@ describe("private gallery persistence", () => {
     ).rejects.toMatchObject({ status: 401 });
     const wrongSecretEnv = {
       ...env,
-      CLIENT_SESSION_SECRET: "different-from-client-secret",
+      CLIENT_SESSION_SECRET: "different-client-secret-for-session-forgery-test",
     } as Env;
     const foreignToken = await createClientSession(identity, wrongSecretEnv);
     await expect(
