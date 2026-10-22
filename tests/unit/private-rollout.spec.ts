@@ -6,6 +6,7 @@ import {
 } from "../../worker/client/router";
 import wrangler from "../../wrangler.jsonc?raw";
 import workflow from "../../.github/workflows/cloudflare-git-main.yml?raw";
+import deployWorkflow from "../../.github/workflows/deploy.yml?raw";
 import { privateRequest } from "../integration/client-fixture";
 
 describe("private rollout guard", () => {
@@ -41,6 +42,17 @@ describe("private rollout guard", () => {
     expect(wrangler).toContain('"PRIVATE_GALLERIES_ENABLED": "false"');
     expect(wrangler).toContain('"/albuns/*"');
     expect(workflow).toContain("PRIVATE_GALLERIES_ENABLED: 'false'");
+  });
+  it("never allows a manual production deployment from a review branch", () => {
+    expect(deployWorkflow).toContain("DEPLOY_REF: ${{ github.ref }}");
+    expect(deployWorkflow).toContain(
+      'if [ "$DEPLOY_REF" != "refs/heads/main" ]; then',
+    );
+    expect(deployWorkflow).toContain(
+      'if [ "$PRODUCTION_CONFIRMATION" != "DEPLOY_PRODUCTION" ]; then',
+    );
+    expect(deployWorkflow).toContain("if: inputs.environment == 'preview'");
+    expect(deployWorkflow).toContain("if: inputs.environment == 'production'");
   });
   it("blocks private optimizer sources even with cookies and encoded paths", async () => {
     for (const source of [
