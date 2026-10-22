@@ -1,4 +1,5 @@
 import { handleAdminApi } from "./api/admin";
+import { handlePrivateGalleryRoutes } from "./client/router";
 import { handleAdminAuth } from "./api/admin-auth";
 import { handlePublicApi } from "./api/public";
 import { serveMedia } from "./media/serve";
@@ -21,6 +22,8 @@ export default {
     const url = new URL(request.url);
 
     try {
+      const privateResult = await handlePrivateGalleryRoutes(request, url, env);
+      if (privateResult) return privateResult;
       const publicResponse = await handlePublicApi(request, url, env);
       if (publicResponse) return publicResponse;
 

@@ -1,4 +1,5 @@
 import { envNumber, envString, requireDb } from "./utils/env";
+import { PRIVATE_BACKUP_TABLES, hasPrivateGallerySchema, cleanupPrivateGalleryUploads } from "./client/maintenance";
 
 const BACKUP_TABLES = [
   "site_settings",
@@ -26,7 +27,8 @@ async function logicalBackup(env: Env): Promise<void> {
   const createdAt = new Date();
   const data: Record<string, unknown[]> = {};
   const rowCounts: Record<string, number> = {};
-  for (const table of BACKUP_TABLES) {
+  const tables=await hasPrivateGallerySchema(db) ? [...BACKUP_TABLES,...PRIVATE_BACKUP_TABLES] : BACKUP_TABLES;
+  for (const table of tables) {
     const result = await db.prepare(`SELECT * FROM ${table}`).all();
     data[table] = result.results;
     rowCounts[table] = result.results.length;
@@ -142,7 +144,7 @@ export async function handleScheduled(
   env: Env,
   ctx: ExecutionContext,
 ): Promise<void> {
-  const jobs: Promise<void>[] = [cleanupOrphanUploads(env)];
+  const jobs: Promise<void>[] = [cleanupOrphanUploads(env),cleanupPrivateGalleryUploads(env)];
   if (event.cron === "0 3 * * *") {
     jobs.push(logicalBackup(env), cleanupOldBackups(env));
   }

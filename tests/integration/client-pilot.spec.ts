@@ -1,0 +1,57 @@
+import { env,exports } from "cloudflare:workers";
+import { beforeAll,describe,expect,it } from "vitest";
+import { bootstrapPrivateDb,privateRequest } from "./client-fixture";
+import { runPrivateUploadQueue } from "../../app/admin/components/private-gallery-utils";
+
+const PNG=Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGOUkZFhYGBgYmBgYGBgAAAEGgBYbf/S0wAAAABJRU5ErkJggg=="),c=>c.charCodeAt(0));
+describe("private client album pilot",()=>{
+  beforeAll(bootstrapPrivateDb);
+  it("delivers 10 real uploads with isolated retry and exercises the entire lifecycle",async()=>{
+    const send=(path:string,method="GET",body?:unknown,cookie?:string)=>exports.default.fetch(privateRequest(path,method,body,cookie));
+    const email=crypto.randomUUID()+"@example.com";
+    const account=await (await send("/admin/api/clientes","POST",{name:"Fictitious Pilot",email})).json() as {client:{id:string};temporaryPassword:string};
+    const login=await send("/api/client/session","POST",{email,password:account.temporaryPassword});
+    expect(login.status).toBe(200);const temporaryCookie=login.headers.get("Set-Cookie")!.split(";")[0];
+    expect((await send("/api/client/galleries","GET",undefined,temporaryCookie)).status).toBe(403);
+    const changed=await send("/api/client/password","POST",{password:"Pilot private password 123!"},temporaryCookie);
+    expect(changed.status).toBe(200);const cookie=changed.headers.get("Set-Cookie")!.split(";")[0];
+    const created=await send("/admin/api/albuns-privados","POST",{clientId:account.client.id,title:"Private Pilot",theme:"warm"});
+    expect(created.status).toBe(201);
+    const {gallery}=await created.json() as {gallery:{id:string}};
+    const admin="/admin/api/albuns-privados/"+gallery.id;const client="/api/client/galleries/"+gallery.id;
+    const uploaded:string[]=[];
+    await runPrivateUploadQueue(Array.from({length:10},(_,index)=>({index,status:"queued"})),async job=>{
+      const intentResponse=await send(admin+"/uploads/intents","POST",{filename:"pilot-"+job.index+".png",mimeType:"image/png",sizeBytes:PNG.length});
+      expect(intentResponse.status).toBe(201);
+      const intent=await intentResponse.json() as {intentId:string;imageId:string;uploadUrl:string;requiredHeaders:Record<string,string>};
+      const put=(bytes:Uint8Array)=>exports.default.fetch(new Request(intent.uploadUrl,{method:"PUT",headers:{...intent.requiredHeaders,Origin:"http://localhost:8787","Content-Length":String(bytes.length)},body:new Uint8Array(bytes).buffer}));
+      if(job.index===4)expect((await put(new Uint8Array(PNG.length))).status).toBe(400);
+      expect((await put(PNG)).status).toBe(200);
+      expect((await send(admin+"/uploads/"+intent.intentId+"/complete","POST")).status).toBe(200);
+      uploaded.push(intent.imageId);
+    });
+    expect(uploaded).toHaveLength(10);
+    expect((await send(admin+"/cover","PUT",{imageId:uploaded[0]})).status).toBe(200);
+    expect((await send(admin+"/publish","POST")).status).toBe(200);
+    const detail=await (await send(client,"GET",undefined,cookie)).json() as {gallery:{images:unknown[]}};
+    expect(detail.gallery.images).toHaveLength(10);
+    expect((await send(client+"/favorites/"+uploaded[0],"PUT",undefined,cookie)).status).toBe(200);
+    const photo=client+"/images/"+uploaded[0];
+    expect((await send(photo+"/gallery","GET",undefined,cookie)).status).toBe(200);
+    expect((await send(photo+"/download","GET",undefined,cookie)).status).toBe(403);
+    expect((await send(admin,"PATCH",{allowDownloads:true})).status).toBe(200);
+    expect(new Uint8Array(await (await send(photo+"/download","GET",undefined,cookie)).arrayBuffer())).toEqual(PNG);
+    expect((await send("/media/"+uploaded[0]+"/gallery","GET",undefined,cookie)).status).toBe(404);
+    const list=await send("/api/public/albums");
+    expect(await list.text()).not.toContain(gallery.id);
+    expect((await send(admin+"/archive","POST")).status).toBe(200);
+    expect((await send(photo+"/gallery","GET",undefined,cookie)).status).toBe(404);
+    const reset=await send("/admin/api/clientes/"+account.client.id+"/reset-password","POST");
+    expect(reset.status).toBe(200);
+    expect((await send("/api/client/me","GET",undefined,cookie)).status).toBe(401);
+    expect((await send("/admin/api/clientes/"+account.client.id,"PATCH",{disabled:true})).status).toBe(200);
+    expect((await send("/api/client/session","POST",{email,password:account.temporaryPassword})).status).toBe(401);
+    const audit=await env.DB.prepare("SELECT data_json FROM audit_log WHERE entity_id=?").bind(account.client.id).all();
+    expect(JSON.stringify(audit.results)).not.toContain(account.temporaryPassword);
+  },30_000);
+});

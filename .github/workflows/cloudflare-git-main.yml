@@ -137,6 +137,7 @@ jobs:
           };
           config.vars = {
             ENVIRONMENT: 'production',
+            PRIVATE_GALLERIES_ENABLED: 'false',
             SITE_ORIGIN: productionUrl,
             PUBLIC_SITE_URL: productionUrl,
             PUBLIC_WHATSAPP_E164: 'UNSPECIFIED',
