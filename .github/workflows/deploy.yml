@@ -54,6 +54,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: node --test services/punctum-password-bridge/server.test.mjs
       - run: npm run build
       - name: Install trusted Wrangler
         run: npm install --global --no-audit --no-fund wrangler@4.131.1
