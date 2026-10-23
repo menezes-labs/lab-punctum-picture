@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
+import { env } from "cloudflare:workers";
+import "./private-gallery-admin.css";
 
 const navigation = [
   { href: "/admin", label: "Visão geral", icon: LayoutDashboard },
@@ -20,6 +22,9 @@ const navigation = [
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
+  const links=Reflect.get(env,"PRIVATE_GALLERIES_ENABLED")==="true" ? [...navigation,
+    {href:"/admin/clientes",label:"Clientes",icon:FolderHeart},
+    {href:"/admin/albuns-privados",label:"Álbuns privados",icon:Camera}] : navigation;
   return (
     <div className="admin-body">
       <div className="admin-shell">
@@ -29,7 +34,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             Punctum Picture
           </Link>
           <nav aria-label="Painel">
-            {navigation.map(({ href, label, icon: Icon }) => (
+            {links.map(({ href, label, icon: Icon }) => (
               <Link key={href} href={href}>
                 <Icon size={17} aria-hidden="true" />
                 {label}
@@ -44,8 +49,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <LogoutButton />
         </aside>
         <main className="admin-main">{children}</main>
-        <nav className="mobile-admin-nav" aria-label="Painel no celular">
-          {navigation.map(({ href, label, icon: Icon }) => (
+        <nav className={"mobile-admin-nav"+(links.length>navigation.length?" private-gallery-mobile-nav":"")} aria-label="Painel no celular">
+          {links.map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href}>
               <Icon size={19} aria-hidden="true" />
               <span>{label}</span>

@@ -1,5 +1,6 @@
 import {
   index,
+  foreignKey,
   integer,
   primaryKey,
   real,
@@ -263,3 +264,68 @@ export const adminCredentials = sqliteTable("admin_credentials", {
   updatedAt: text("updated_at").notNull(),
   updatedBy: text("updated_by").notNull(),
 });
+
+export const clientAccounts = sqliteTable("client_accounts", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  passwordSalt: text("password_salt").notNull(),
+  passwordIterations: integer("password_iterations").notNull(),
+  mustChangePassword: integer("must_change_password", { mode: "boolean" }).notNull().default(true),
+  sessionVersion: integer("session_version").notNull().default(1),
+  disabledAt: text("disabled_at"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+export const clientGalleries = sqliteTable("client_galleries", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull().references(() => clientAccounts.id),
+  title: text("title").notNull(),
+  introduction: text("introduction").notNull().default(""),
+  theme: text("theme", { enum: ["noir", "ivory", "warm"] }).notNull().default("noir"),
+  coverImageId: text("cover_image_id"),
+  allowDownloads: integer("allow_downloads", { mode: "boolean" }).notNull().default(false),
+  status: text("status", { enum: ["draft", "published", "archived"] }).notNull().default("draft"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+  publishedAt: text("published_at"),
+}, (t) => [index("idx_client_galleries_owner_status").on(t.clientId, t.status)]);
+export const clientGalleryImages = sqliteTable("client_gallery_images", {
+  id: text("id").primaryKey(),
+  galleryId: text("gallery_id").notNull().references(() => clientGalleries.id),
+  storageKey: text("storage_key").notNull().unique(),
+  originalFilename: text("original_filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  width: integer("width"),
+  height: integer("height"),
+  altText: text("alt_text").notNull().default(""),
+  position: integer("position").notNull(),
+  status: text("status", { enum: ["pending", "ready", "failed"] }).notNull().default("pending"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+  deletedAt: text("deleted_at"),
+}, (t) => [index("idx_client_images_position").on(t.galleryId, t.position),
+  index("idx_client_images_status").on(t.galleryId, t.status),
+  uniqueIndex("idx_client_images_gallery_id").on(t.galleryId, t.id)]);
+export const clientGalleryUploadIntents = sqliteTable("client_gallery_upload_intents", {
+  id: text("id").primaryKey(),
+  galleryId: text("gallery_id").notNull().references(() => clientGalleries.id),
+  imageId: text("image_id").notNull(),
+  expectedMime: text("expected_mime").notNull(),
+  expectedSize: integer("expected_size").notNull(),
+  storageKey: text("storage_key").notNull().unique(),
+  status: text("status", { enum: ["pending", "uploaded", "completed", "expired", "failed"] }).notNull().default("pending"),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull(),
+  completedAt: text("completed_at"),
+}, (t) => [index("idx_client_intents_expiry").on(t.status, t.expiresAt),
+  foreignKey({columns:[t.galleryId,t.imageId],foreignColumns:[clientGalleryImages.galleryId,clientGalleryImages.id]})]);
+export const clientGalleryFavorites = sqliteTable("client_gallery_favorites", {
+  clientId: text("client_id").notNull().references(() => clientAccounts.id),
+  galleryId: text("gallery_id").notNull().references(() => clientGalleries.id),
+  imageId: text("image_id").notNull(),
+  createdAt: text("created_at").notNull(),
+}, (t) => [primaryKey({ columns: [t.clientId, t.galleryId, t.imageId] }),
+  foreignKey({columns:[t.galleryId,t.imageId],foreignColumns:[clientGalleryImages.galleryId,clientGalleryImages.id]})]);

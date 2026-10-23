@@ -26,14 +26,22 @@ jobs:
     steps:
       - name: Guard production deploy
         if: inputs.environment == 'production'
+        env:
+          DEPLOY_REF: ${{ github.ref }}
+          PRODUCTION_CONFIRMATION: ${{ inputs.confirm_production }}
         run: |
-          if [ "${{ inputs.confirm_production }}" != "DEPLOY_PRODUCTION" ]; then
+          if [ "$DEPLOY_REF" != "refs/heads/main" ]; then
+            echo "Production bloqueada: execute somente a partir da branch main."
+            exit 1
+          fi
+          if [ "$PRODUCTION_CONFIRMATION" != "DEPLOY_PRODUCTION" ]; then
             echo "Production bloqueada: confirmação explícita ausente."
             exit 1
           fi
 
   deploy:
     needs: validate-production
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
@@ -46,15 +54,43 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: node --test services/punctum-password-bridge/server.test.mjs
       - run: npm run build
       - name: Install trusted Wrangler
-        run: npm install --global --no-audit --no-fund wrangler@4.112.0
-      - name: Deploy preview
+        run: npm install --global --no-audit --no-fund wrangler@4.131.1
+      - name: Inspect Access API permissions (read-only QA)
         if: inputs.environment == 'preview'
-        run: wrangler deploy --env preview
+        continue-on-error: true
+        run: node scripts/private-access-qa-discovery.mjs
         env:
+          PRIVATE_GALLERY_PREVIEW: "true"
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Save Access QA discovery report
+        if: always() && inputs.environment == 'preview'
+        uses: actions/upload-artifact@v4
+        with:
+          name: private-access-qa-discovery
+          path: outputs/private-access-qa-discovery.json
+          if-no-files-found: ignore
+      - name: Deploy preview
+        if: inputs.environment == 'preview'
+        run: node scripts/private-galleries-preview.mjs
+        env:
+          PRIVATE_GALLERY_PREVIEW: "true"
+          PRIVATE_GALLERY_PREVIEW_AUTH_MODE: "access"
+          CLIENT_ACCESS_TEAM_DOMAIN: ${{ vars.CLIENT_ACCESS_TEAM_DOMAIN }}
+          CLIENT_ACCESS_AUD: ${{ vars.CLIENT_ACCESS_AUD }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_D1_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_API_TOKEN }}
+      - name: Save sanitized preview report
+        if: always() && inputs.environment == 'preview'
+        uses: actions/upload-artifact@v4
+        with:
+          name: private-galleries-preview-report
+          path: outputs/private-galleries-preview-report.json
+          if-no-files-found: ignore
       - name: Deploy production
         if: inputs.environment == 'production'
         run: wrangler deploy

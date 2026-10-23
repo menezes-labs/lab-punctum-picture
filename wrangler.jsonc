@@ -9,7 +9,7 @@
     "directory": "./dist/client",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*", "/admin/*", "/media/*", "/sitemap.xml", "/robots.txt"]
+    "run_worker_first": ["/albuns", "/albuns/*", "/_vinext/image", "/api/*", "/admin/*", "/media/*", "/sitemap.xml", "/robots.txt"]
   },
   "d1_databases": [
     {
@@ -57,6 +57,8 @@
   },
   "vars": {
     "ENVIRONMENT": "production",
+    "PRIVATE_GALLERIES_ENABLED": "false",
+    "CLIENT_AUTH_MODE": "access",
     "SITE_ORIGIN": "https://punctumpicture.com",
     "PUBLIC_SITE_URL": "https://punctumpicture.com",
     "PUBLIC_WHATSAPP_E164": "UNSPECIFIED",
@@ -77,6 +79,8 @@
       "name": "punctum-picture-preview",
       "vars": {
         "ENVIRONMENT": "preview",
+        "PRIVATE_GALLERIES_ENABLED": "false",
+    "CLIENT_AUTH_MODE": "access",
         "SITE_ORIGIN": "https://preview.punctumpicture.com",
         "PUBLIC_SITE_URL": "https://preview.punctumpicture.com",
         "PUBLIC_WHATSAPP_E164": "UNSPECIFIED",
@@ -124,6 +128,8 @@
       "name": "punctum-picture-migration",
       "vars": {
         "ENVIRONMENT": "production",
+    "PRIVATE_GALLERIES_ENABLED": "false",
+    "CLIENT_AUTH_MODE": "access",
         "SITE_ORIGIN": "https://punctumpicture.com",
         "PUBLIC_SITE_URL": "https://punctumpicture.com",
         "PUBLIC_WHATSAPP_E164": "UNSPECIFIED",

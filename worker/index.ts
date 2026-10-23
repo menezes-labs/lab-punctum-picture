@@ -4,6 +4,8 @@ import {
   handleImageOptimization,
 } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
+import { handlePrivateGalleryRoutes, isPrivateGalleryPath } from "./client/router";
+import { privateResponse } from "./client/response";
 import { handleAdminApi } from "./api/admin";
 import { handleAdminAuth } from "./api/admin-auth";
 import { handlePublicApi } from "./api/public";
@@ -23,11 +25,14 @@ async function routeRequest(
   const url = new URL(request.url);
 
   if (url.hostname === "www.punctumpicture.com") {
-    return Response.redirect(
+    const redirect = Response.redirect(
       `https://punctumpicture.com${url.pathname}${url.search}`,
       308,
     );
+    return isPrivateGalleryPath(url.pathname) ? privateResponse(redirect) : redirect;
   }
+  const privateResult = await handlePrivateGalleryRoutes(request, url, env);
+  if (privateResult) return privateResult;
 
   if (url.pathname === "/_vinext/image") {
     if (!env.IMAGES) {
@@ -143,7 +148,8 @@ async function routeRequest(
       ) {
         const loginUrl = new URL("/acesso", request.url);
         loginUrl.searchParams.set("next", `${url.pathname}${url.search}`);
-        return Response.redirect(loginUrl, 303);
+        const redirect=Response.redirect(loginUrl,303);
+        return isPrivateGalleryPath(url.pathname) ? privateResponse(redirect) : redirect;
       }
       throw error;
     }
@@ -161,7 +167,7 @@ async function routeRequest(
   }
 
   const response = await handler.fetch(request, env, ctx);
-  return withSecurityHeaders(response);
+  return isPrivateGalleryPath(url.pathname) ? privateResponse(response) : withSecurityHeaders(response);
 }
 
 export default {
@@ -170,6 +176,7 @@ export default {
     try {
       return await routeRequest(request, env, ctx);
     } catch (error) {
+      if (isPrivateGalleryPath(new URL(request.url).pathname)) return privateResponse(apiError(error,requestId));
       if (error instanceof AppError && error.status === 404 && !new URL(request.url).pathname.startsWith("/api/")) {
         return new Response("Página não encontrada.", {
           status: 404,
