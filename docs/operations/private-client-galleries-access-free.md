@@ -35,7 +35,7 @@ Segundo a página pública de preços da Cloudflare, o Zero Trust/Access Free é
 
 ## Limitação do piloto automatizado no preview
 
-O workflow `Deploy` com `environment=preview` utiliza somente D1 e R2 isolados, não aplica `limits.cpu_ms` quando o modo é Access e exige `PRIVATE_GALLERY_PREVIEW_AUTH_MODE=access`. A configuração dos testes inclui team domain/AUD **marcadores**, sem app Access real.
+O workflow `Deploy` com `environment=preview` utiliza somente D1 e R2 isolados, não aplica `limits.cpu_ms` quando o modo é Access e exige `PRIVATE_GALLERY_PREVIEW_AUTH_MODE=access`. Por padrão, a configuração dos testes inclui team domain/AUD **marcadores**, sem app Access real. Para testar OTP de verdade, definir juntas as GitHub Environment vars `CLIENT_ACCESS_TEAM_DOMAIN` (hostname sem protocolo, `<team>.cloudflareaccess.com`) e `CLIENT_ACCESS_AUD` (AUD da app **somente QA**). Se uma delas faltar, o preview recusa a configuração; essas variáveis não modificam a app no dashboard.
 
 Para conseguir verificar as rotas internas (álbum, uploads, favoritos, download, revogação, restauração), o script gera uma **sessão HMAC exclusivamente de QA** com um segredo aleatório do Worker preview, sem forjar um JWT do Cloudflare Access. Esse cookie nunca é exportado em artefatos. O relatório declara `accessProviderTested:false` e `status:partial-access-setup-required`, mesmo quando as rotas de QA passam.
 
