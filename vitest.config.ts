@@ -22,6 +22,7 @@ export default defineConfig({
           ADMIN_SESSION_SECRET: "test-only-session-secret-with-enough-entropy",
           CLIENT_SESSION_SECRET: "test-only-independent-client-session-secret",
           PRIVATE_GALLERIES_ENABLED: "true",
+          CLIENT_AUTH_MODE: "password",
           ADMIN_LOGIN_RATE_LIMIT_MAX: "10",
           ADMIN_LOGIN_RATE_LIMIT_WINDOW_SECONDS: "900",
           MAX_UPLOAD_BYTES: "26214400",
