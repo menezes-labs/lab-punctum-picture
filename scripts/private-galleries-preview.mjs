@@ -28,9 +28,12 @@ const token = process.env.CLOUDFLARE_API_TOKEN;
 const dbToken = process.env.CLOUDFLARE_D1_API_TOKEN;
 assert.ok(token && dbToken, "Missing preview deployment credentials.");
 const generated = "dist/server/wrangler.json";
+const accessMode = process.env.PRIVATE_GALLERY_PREVIEW_AUTH_MODE === "access";
 const report = {
   status: "running",
   worker: names.worker,
+  authMode: accessMode ? "access" : "password",
+  accessProviderTested: false,
   productionTouched: false,
   checks: [],
 };
@@ -236,11 +239,11 @@ try {
   }
   for (let attempt = 0; attempt < 12; attempt++) {
     const response = await fetch(origin + "/albuns/entrar");
-    if (response.status === 200) break;
+    if (response.status === (accessMode ? 401 : 200)) break;
     if (attempt === 11) throw new Error("Preview did not become ready.");
     await sleep(1000);
   }
-  await request("/albuns/entrar", "GET", undefined, "");
+  await request("/albuns/entrar", "GET", undefined, "", accessMode ? 401 : 200);
   await request("/albuns", "GET", undefined, "", 303);
   await waitForPreviewStatus({
     probe: async () =>
@@ -264,34 +267,68 @@ try {
       201,
     )
   ).json();
-  mask(accountData.temporaryPassword);
-  const login = await request(
-    "/api/client/session",
-    "POST",
-    { email, password: accountData.temporaryPassword },
-    "",
-  );
-  const temporaryCookie = login.headers.get("set-cookie").split(";")[0];
-  mask(temporaryCookie);
-  await request(
-    "/api/client/galleries",
-    "GET",
-    undefined,
-    temporaryCookie,
-    403,
-  );
-  const changed = await request(
-    "/api/client/password",
-    "POST",
-    { password },
-    temporaryCookie,
-  );
-  const cookie = changed.headers.get("set-cookie").split(";")[0];
-  mask(cookie);
-  await request("/api/client/me", "GET", undefined, temporaryCookie, 401);
-  record(
-    "first-password flow and old-session revocation on Cloudflare runtime",
-  );
+  let cookie;
+  if (accessMode) {
+    assert.equal(accountData.authMode, "access");
+    assert.equal(accountData.temporaryPassword, undefined);
+    await request(
+      "/api/client/session",
+      "POST",
+      { email, password: "blocked" },
+      "",
+      405,
+    );
+    await request("/api/client/password", "POST", { password }, "", 405);
+    const now = Math.floor(Date.now() / 1000);
+    cookie =
+      "punctum_client_session=" +
+      sign(
+        {
+          sub: accountData.client.id,
+          version: 1,
+          iat: now,
+          exp: now + 3600,
+          audience: "punctum-client-access",
+        },
+        clientSecret,
+      );
+    mask(cookie);
+    await request("/api/client/me", "GET", undefined, cookie);
+    report.accessProviderTested = false;
+    report.sessionForQa = "synthetic HMAC cookie in isolated QA only";
+    record(
+      "Access-only account, password endpoints disabled, and synthetic QA session for downstream tests",
+    );
+  } else {
+    mask(accountData.temporaryPassword);
+    const login = await request(
+      "/api/client/session",
+      "POST",
+      { email, password: accountData.temporaryPassword },
+      "",
+    );
+    const temporaryCookie = login.headers.get("set-cookie").split(";")[0];
+    mask(temporaryCookie);
+    await request(
+      "/api/client/galleries",
+      "GET",
+      undefined,
+      temporaryCookie,
+      403,
+    );
+    const changed = await request(
+      "/api/client/password",
+      "POST",
+      { password },
+      temporaryCookie,
+    );
+    cookie = changed.headers.get("set-cookie").split(";")[0];
+    mask(cookie);
+    await request("/api/client/me", "GET", undefined, temporaryCookie, 401);
+    record(
+      "first-password flow and old-session revocation on Cloudflare runtime",
+    );
+  }
   const data = await (
     await request(
       "/admin/api/albuns-privados",
@@ -529,15 +566,34 @@ try {
       "POST",
     )
   ).json();
-  mask(reset.temporaryPassword);
   await request("/api/client/me", "GET", undefined, cookie, 401);
-  const resetLogin = await request(
-    "/api/client/session",
-    "POST",
-    { email, password: reset.temporaryPassword },
-    "",
-  );
-  const resetCookie = resetLogin.headers.get("set-cookie").split(";")[0];
+  let resetCookie;
+  if (accessMode) {
+    assert.equal(reset.temporaryPassword, undefined);
+    assert.equal(reset.authMode, "access");
+    const now = Math.floor(Date.now() / 1000);
+    resetCookie =
+      "punctum_client_session=" +
+      sign(
+        {
+          sub: accountData.client.id,
+          version: 2,
+          iat: now,
+          exp: now + 3600,
+          audience: "punctum-client-access",
+        },
+        clientSecret,
+      );
+  } else {
+    mask(reset.temporaryPassword);
+    const resetLogin = await request(
+      "/api/client/session",
+      "POST",
+      { email, password: reset.temporaryPassword },
+      "",
+    );
+    resetCookie = resetLogin.headers.get("set-cookie").split(";")[0];
+  }
   mask(resetCookie);
   await request("/api/client/me", "GET", undefined, resetCookie);
   await request("/admin/api/clientes/" + accountData.client.id, "PATCH", {
@@ -547,12 +603,12 @@ try {
   await request(
     "/api/client/session",
     "POST",
-    { email, password: reset.temporaryPassword },
+    { email, password: reset.temporaryPassword ?? "disabled" },
     "",
-    401,
+    accessMode ? 405 : 401,
   );
   record("archive, reset and disabled account revocation after restoration");
-  report.status = "passed";
+  report.status = accessMode ? "partial-access-setup-required" : "passed";
 } catch (error) {
   report.status = "failed";
   report.error = error.message;
