@@ -89,3 +89,17 @@ A PR #13 permanece em draft, sem merge e com PRIVATE_GALLERIES_ENABLED=false em 
 - **Limite do piloto:** o acesso ao cliente no cenário E2E foi feito com sessão HMAC sintética criada pelo script usando segredo aleatório exclusivamente no QA isolado. **Não** validou o e-mail OTP e a assinatura JWT de uma aplicação Cloudflare Access **real**. Os testes criptográficos locais de JWT assinado/issuer/audience passaram, mas não substituem o login remoto de verdade.
 
 **NO-GO operacional permanece:** configurar aplicativo Access Self-hosted de QA limitado a `/albuns/entrar`, copiar o team domain e audience para o ambiente preview, fazer login por código OTP em e-mail de teste e verificar bloqueio de e-mails desconhecidos/desativados. Ainda precisam de QA móvel real, LGPD aprovada, backup rotineiro R2 e aprovação de merge/ativação. O custo Workers Paid deixa de ser gate da opção B **para o que foi testado**; qualquer nova rota sob `exceededCpu` deve ser corrigida antes de produção, sem supor que todo tráfego futuro caberá no Free.
+
+## Descoberta de permissões Cloudflare Access — 2026-10-23 UTC
+
+Verificação de **leitura exclusivamente no ambiente preview**: [GitHub Actions #39885380716](https://github.com/menezesx2k26-byte/lab-punctum-picture/actions/runs/39885380716), arquivo sanitizado `private-access-qa-discovery` (artifact ID `12471834810`). Script `scripts/private-access-qa-discovery.mjs`, commit `f399805b`.
+
+- A conexão Cloudflare do usuário anunciou privilégios **Super Administrator**, incluindo `#access:read` e `#access:edit`.
+- O GitHub Actions **não** utilizou uma Global API Key; identificou autenticação **API Token** em `CLOUDFLARE_API_TOKEN`. Portanto, privilégios globais do usuário e escopos do token não são intercambiáveis.
+- Endpoint `GET /accounts/{id}/access/apps`: **HTTP 200**, lista permitida. Nenhum app específico para `punctum-picture-albums-qa.menezesx2k26.workers.dev/albuns/entrar` encontrado.
+- Endpoint `GET /accounts/{id}/access/identity_providers`: **HTTP 200**, mas não encontrou IdP `onetimepin` no conjunto retornado.
+- Endpoint `GET /accounts/{id}/access/organizations`: **HTTP 403**, falta de acesso efetivo via token atual ou restrição organizacional. Não foi possível derivar com segurança o team domain para JWT.
+- **Nenhum POST/PUT/PATCH/DELETE enviado à API Access.** Não foi verificada capacidade de criar aplicativos nem de habilitar OTP. `productionTouched:false`.
+- Próximo gate: habilitar/confirmar Zero Trust organization e One-time PIN no contexto certo; preferir um **API Token de menor privilégio**, com `Access: Apps and Policies Write` e `Access: Organizations, Identity Providers, and Groups Read`, no lugar de distribuir Global API Key. Configurar app restrito ao **hostname de QA e caminho único**, confirmar AUD e issuer, depois executar OTP real com conta fictícia.
+
+**Não concluir que a Global API Key falhou:** ela **não** estava disponível ao job. O HTTP 403 refere-se exclusivamente à credencial atualmente configurada no workflow.
