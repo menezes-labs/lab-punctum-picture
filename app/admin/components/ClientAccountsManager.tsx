@@ -17,11 +17,14 @@ export function ClientAccountsManager() {
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [authMode, setAuthMode] = useState<"password" | "access">("password");
+  const [notice, setNotice] = useState("");
   const load = useCallback(async () => {
-    const data = await privateApi<{ clients: ClientAccountSummary[] }>(
+    const data = await privateApi<{ clients: ClientAccountSummary[]; authMode: "password" | "access" }>(
       "/admin/api/clientes",
     );
     setClients(data.clients);
+    setAuthMode(data.authMode);
     setLoading(false);
   }, []);
   useEffect(() => {
@@ -38,13 +41,15 @@ export function ClientAccountsManager() {
     setError("");
     setCredential(null);
     setCopied(false);
+    setNotice("");
     try {
-      const data = await privateApi<{ temporaryPassword: string }>(
+      const data = await privateApi<{ temporaryPassword?: string }>(
         "/admin/api/clientes",
         "POST",
         { name, email },
       );
-      setCredential({ email, password: data.temporaryPassword });
+      if (data.temporaryPassword) setCredential({ email, password: data.temporaryPassword });
+      else setNotice("Cliente cadastrado. Envie o endereço /albuns/entrar para confirmar o e-mail pelo Cloudflare Access.");
       setName("");
       setEmail("");
       await load();
@@ -58,7 +63,9 @@ export function ClientAccountsManager() {
     if (
       reset &&
       !window.confirm(
-        "Gerar uma nova senha temporária? Isso encerra todos os acessos atuais deste cliente.",
+        authMode === "access"
+          ? "Revogar todas as sessões deste cliente e confirmar novamente o acesso pelo e-mail?"
+          : "Gerar uma nova senha temporária? Isso encerra todos os acessos atuais deste cliente.",
       )
     )
       return;
@@ -72,16 +79,18 @@ export function ClientAccountsManager() {
     setError("");
     setCredential(null);
     setCopied(false);
+    setNotice("");
     try {
       if (reset) {
-        const data = await privateApi<{ temporaryPassword: string }>(
+        const data = await privateApi<{ temporaryPassword?: string }>(
           "/admin/api/clientes/" + client.id + "/reset-password",
           "POST",
         );
-        setCredential({
-          email: client.email,
-          password: data.temporaryPassword,
-        });
+        if (data.temporaryPassword) {
+          setCredential({ email: client.email, password: data.temporaryPassword });
+        } else {
+          setNotice("Sessões revogadas. O próximo acesso exigirá confirmação pelo e-mail.");
+        }
       } else
         await privateApi("/admin/api/clientes/" + client.id, "PATCH", {
           disabled: !client.disabledAt,
@@ -108,6 +117,10 @@ export function ClientAccountsManager() {
         <p role="alert" className="pga-error">
           {error}
         </p>
+      )}
+      {notice && <p role="status" className="pga-note">{notice}</p>}
+      {authMode === "access" && (
+        <p className="pga-note">O acesso é por código de e-mail, validado pelo Cloudflare Access. Não serão emitidas senhas temporárias.</p>
       )}
       {credential && (
         <section
@@ -183,7 +196,7 @@ export function ClientAccountsManager() {
             />
           </label>
           <button className="button" disabled={busy} type="submit">
-            {busy ? "Aguarde…" : "Cadastrar e gerar senha"}
+            {busy ? "Aguarde…" : authMode === "access" ? "Cadastrar cliente" : "Cadastrar e gerar senha"}
           </button>
         </form>
       </section>
@@ -200,7 +213,7 @@ export function ClientAccountsManager() {
               <span className="pga-badge">
                 {client.disabledAt
                   ? "Desativado"
-                  : client.mustChangePassword
+                  : authMode === "password" && client.mustChangePassword
                     ? "Aguardando troca de senha"
                     : "Ativo"}
               </span>
@@ -211,7 +224,7 @@ export function ClientAccountsManager() {
                 disabled={busy}
                 onClick={() => manage(client, true)}
               >
-                Nova senha
+                {authMode === "access" ? "Revogar sessões" : "Nova senha"}
               </button>
               <button
                 className="button secondary"
