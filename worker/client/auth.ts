@@ -1,5 +1,6 @@
 import { AppError } from "../utils/errors";
 import { requireClientSessionSecret } from "./secret";
+import { clientAuthMode } from "./auth-mode";
 import { base64Url, unbase64Url } from "./passwords";
 import { getActiveClient } from "./repository";
 export const CLIENT_SESSION_TTL = 43_200;
@@ -32,7 +33,7 @@ export async function createClientSession(
         version: identity.sessionVersion,
         iat: now,
         exp: now + CLIENT_SESSION_TTL,
-        audience: "punctum-client",
+        audience: clientAuthMode(env) === "access" ? "punctum-client-access" : "punctum-client",
       }),
     ),
   );
@@ -89,7 +90,8 @@ export async function requireClient(
       !Number.isInteger(payload.version) ||
       !Number.isInteger(payload.exp) ||
       !Number.isInteger(payload.iat) ||
-      payload.audience !== "punctum-client" ||
+      payload.audience !==
+        (clientAuthMode(env) === "access" ? "punctum-client-access" : "punctum-client") ||
       payload.exp <= now ||
       payload.iat > now + 30 ||
       payload.exp - payload.iat > CLIENT_SESSION_TTL
