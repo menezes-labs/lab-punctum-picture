@@ -12,7 +12,7 @@ const PRODUCTION_DATABASES = new Set([
 ]);
 export function privatePreviewConfig(
   base,
-  { databaseId, origin, restored = false },
+  { databaseId, origin, restored = false, accessTeamDomain, accessAudience },
 ) {
   if (
     !/^[0-9a-f-]{36}$/i.test(databaseId ?? "") ||
@@ -32,6 +32,17 @@ export function privatePreviewConfig(
   const authMode = vars.CLIENT_AUTH_MODE ?? "password";
   if (!["password", "access"].includes(authMode))
     throw new Error("Invalid private auth mode.");
+  if (Boolean(accessTeamDomain) !== Boolean(accessAudience))
+    throw new Error("Access preview requires both team domain and audience.");
+  if (accessTeamDomain) {
+    if (
+      !/^[a-z0-9-]+\.cloudflareaccess\.com$/i.test(accessTeamDomain) ||
+      typeof accessAudience !== "string" ||
+      accessAudience.length < 8 ||
+      accessAudience.length > 256
+    )
+      throw new Error("Invalid Access preview identity configuration.");
+  }
   for (const key of Object.keys(vars))
     if (/SECRET|PASSWORD|TOKEN|KEY/.test(key)) delete vars[key];
   const config = {
@@ -50,8 +61,9 @@ export function privatePreviewConfig(
       CLIENT_AUTH_MODE: authMode,
       ...(authMode === "access"
         ? {
-            CLIENT_ACCESS_TEAM_DOMAIN: "qa-placeholder.cloudflareaccess.com",
-            CLIENT_ACCESS_AUD: "qa-access-not-configured",
+            CLIENT_ACCESS_TEAM_DOMAIN:
+              accessTeamDomain ?? "qa-placeholder.cloudflareaccess.com",
+            CLIENT_ACCESS_AUD: accessAudience ?? "qa-access-not-configured",
           }
         : {}),
       SITE_ORIGIN: url.origin,
