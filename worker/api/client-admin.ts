@@ -24,6 +24,7 @@ import { requireDb } from "../utils/env";
 import { AppError } from "../utils/errors";
 import { assertRateLimit } from "../utils/rate-limit";
 import { parseJson } from "../client/validation";
+import { clientAuthMode } from "../client/auth-mode";
 
 const accountColumns =
   "id,name,email,disabled_at AS disabledAt,must_change_password AS mustChangePassword,created_at AS createdAt";
@@ -38,6 +39,7 @@ export async function handleClientAdminApi(
   const actor = await requireAdmin(request, env);
   assertAllowedOrigin(request, env);
   const db = requireDb(env);
+  const mode = clientAuthMode(env);
   await assertRateLimit(request, db, "client-admin", 200, 60);
   const match = url.pathname.match(
     /^\/admin\/api\/clientes(?:\/([^/]+)(?:\/(reset-password))?)?$/,
@@ -46,6 +48,7 @@ export async function handleClientAdminApi(
   const id = match[1];
   if (!id && request.method === "GET") {
     return privateJson({
+      authMode: mode,
       clients: (
         await db
           .prepare(
@@ -68,8 +71,12 @@ export async function handleClientAdminApi(
         "EMAIL_EXISTS",
         "Já existe um cliente com este e-mail.",
       );
-    const temporaryPassword = generateTemporaryPassword();
-    const credential = await hashClientPassword(temporaryPassword);
+    const temporaryPassword =
+      mode === "password" ? generateTemporaryPassword() : undefined;
+    const credential =
+      temporaryPassword
+        ? await hashClientPassword(temporaryPassword)
+        : { passwordHash: "ACCESS_ONLY", passwordSalt: "ACCESS_ONLY", passwordIterations: 310_000 };
     const clientId = crypto.randomUUID();
     const now = new Date().toISOString();
     try {
@@ -77,7 +84,7 @@ export async function handleClientAdminApi(
         .prepare(
           `INSERT INTO client_accounts
         (id,name,email,password_hash,password_salt,password_iterations,must_change_password,session_version,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,1,1,?,?)`,
+        VALUES (?,?,?,?,?,?,?,1,?,?)`,
         )
         .bind(
           clientId,
@@ -86,6 +93,7 @@ export async function handleClientAdminApi(
           credential.passwordHash,
           credential.passwordSalt,
           credential.passwordIterations,
+          mode === "password" ? 1 : 0,
           now,
           now,
         )
@@ -109,7 +117,8 @@ export async function handleClientAdminApi(
     return privateJson(
       {
         client: { id: clientId, name: input.name, email: input.email },
-        temporaryPassword,
+        ...(temporaryPassword ? { temporaryPassword } : {}),
+        authMode: mode,
       },
       { status: 201 },
     );
@@ -121,6 +130,18 @@ export async function handleClientAdminApi(
   if (!existing)
     throw new AppError(404, "NOT_FOUND", "Recurso não encontrado.");
   if (match[2] && request.method === "POST") {
+    if (mode === "access") {
+      await db
+        .prepare(
+          `UPDATE client_accounts SET password_hash='ACCESS_ONLY',password_salt='ACCESS_ONLY',
+          password_iterations=310000,must_change_password=0,
+          session_version=session_version+1,updated_at=? WHERE id=?`,
+        )
+        .bind(new Date().toISOString(), id)
+        .run();
+      await writeAudit(db, actor.email, "client.access_reauthorized", "client_account", id);
+      return privateJson({ ok: true, authMode: mode });
+    }
     const temporaryPassword = generateTemporaryPassword();
     const c = await hashClientPassword(temporaryPassword);
     await db
