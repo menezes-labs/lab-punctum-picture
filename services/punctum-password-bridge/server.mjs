@@ -70,12 +70,15 @@ export function createPasswordBridgeServer({ secret, now = Date.now } = {}) {
     if (Number(request.headers["content-length"]) > MAX_BODY)
       return json(response, 413, { error: "PAYLOAD_TOO_LARGE" });
 
-    let body = "";
+    const pieces = [];
+    let bodySize = 0;
     for await (const chunk of request) {
-      body += chunk.toString("utf8");
-      if (Buffer.byteLength(body, "utf8") > MAX_BODY)
+      bodySize += chunk.length;
+      if (bodySize > MAX_BODY)
         return json(response, 413, { error: "PAYLOAD_TOO_LARGE" });
+      pieces.push(chunk);
     }
+    const body = Buffer.concat(pieces).toString("utf8");
     if (!authorized(
       request.headers["x-punctum-timestamp"],
       request.headers["x-punctum-nonce"],
