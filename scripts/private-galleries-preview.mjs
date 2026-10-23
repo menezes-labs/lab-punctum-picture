@@ -132,6 +132,11 @@ try {
   }
   record("isolated D1 databases and private R2 buckets");
   const originalConfig = JSON.parse(await readFile(generated, "utf8"));
+  assert.equal(
+    originalConfig.vars?.CLIENT_AUTH_MODE,
+    accessMode ? "access" : "password",
+    "Generated Worker mode differs from QA login mode.",
+  );
   const configure = async (databaseId, restore = false) => {
     await writeFile(
       generated,
@@ -140,6 +145,8 @@ try {
           databaseId,
           origin,
           restored: restore,
+          accessTeamDomain: process.env.CLIENT_ACCESS_TEAM_DOMAIN || undefined,
+          accessAudience: process.env.CLIENT_ACCESS_AUD || undefined,
         }),
       ),
     );
