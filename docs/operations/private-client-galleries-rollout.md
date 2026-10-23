@@ -12,7 +12,7 @@ O módulo é aditivo e vem desligado. Não executar comandos remotos nem merge s
 
 ## Homologação
 
-Criar duas contas fictícias e álbuns de teste com pelo menos 10 fotos. Verificar primeiro login/troca de senha, publicação/capa/ordem, favoritos, permissões de download, logout, reset/desativação e arquivamento. Cada alteração deve valer na próxima requisição. Tentar IDs de outro cliente e mídia pública/otimizador: nenhum byte privado pode retornar.
+Criar duas contas fictícias e álbuns de teste com pelo menos 10 fotos. No modo Access, verificar **primeiro acesso por código OTP com JWT assinado e audience da app real**, publicação/capa/ordem, favoritos, permissões de download, logout Access e da aplicação, revogação/desativação e arquivamento. No modo legado por senha, verificar primeiro login/troca de senha como regressão. Cada alteração deve valer na próxima requisição. Tentar IDs de outro cliente e mídia pública/otimizador: nenhum byte privado pode retornar.
 
 Validar UI 360/390/768/desktop, teclado, Escape/setas/foco no visualizador e redução de movimento. Comparar home/lente/carrossel/autorretrato. Rodar typecheck, lint, npm test e build. Testes locais não substituem Safari/Chrome em aparelhos reais nem um preview implantado.
 
@@ -46,8 +46,10 @@ Uploads abandonados expiram e a limpeza existente remove apenas objetos não pro
 
 Executar Deploy (deploy.yml) na branch de revisão com environment=preview. Exige os secrets CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN e CLOUDFLARE_D1_API_TOKEN no ambiente preview/repositório. O script recusa outros accounts, IDs de D1 de produção e execução fora do GitHub Actions; substitui rotas, bindings, segredos e cron. Nenhum recurso de produção é reutilizado. O artifact private-galleries-preview-report contém somente o JSON sanitizado, sem originais, senhas ou cookies. Recursos QA são preservados para inspeção e não contêm clientes reais.
 
-## Orçamento de CPU — pré-requisito confirmado
+## Plano de CPU — opção B selecionada (Cloudflare Access Free)
 
-A derivação PBKDF2-SHA256/310000 pode exigir implementação JS no edge, pois o WebCrypto gerenciado limita a chamada nativa a 100000 iterações. O piloto confirmou excesso de CPU no Workers Free durante a troca de senha. Exigir Workers Paid e orçamento de pelo menos 2000 ms por invocação para homologar este módulo. A configuração de preview já declara esse teto; produção permanece sem alteração e com a flag desligada. Antes de ativar em produção, confirmar o plano e orçamento efetivos do Worker de produção.
+**Escolha vigente:** autenticação por código de e-mail do Cloudflare Access Free; ver [runbook detalhado](./private-client-galleries-access-free.md). O login por senha/PBKDF2/310000 fica no caminho de compatibilidade, desativado quando CLIENT_AUTH_MODE='access'. Não reduzir iterações para contornar limites de CPU.
 
-Habilitar o plano é uma mudança comercial na conta e exige autorização do proprietário: mínimo de US$5/mês mais excedentes conforme https://developers.cloudflare.com/workers/platform/pricing/. R2 Paid não habilita Workers Paid. Após a autorização e ativação do plano, executar novamente Deploy/preview e exigir o relatório passed antes de fechar o gate de restauração. Nunca reduzir o fator de trabalho da senha para fazer o piloto passar no plano gratuito.
+O Workers Free segue limitado a 10 ms de CPU por requisição: os testes locais **não** comprovam que SSR, mídia e todas as rotas cabem no limite. O piloto de preview no modo Access usa recursos isolados sem `limits.cpu_ms`, e relatório `partial-access-setup-required` até validar JWT/OTP reais e o ciclo completo. Somente depois dos testes reais sem `exceededCpu` e aprovação da operação considerar o gate fechado.
+
+O histórico do modo com senhas registrou excesso de CPU em 350 ms e rejeição de limite customizado `code 100328` no Workers Free. Workers Paid continua sendo uma alternativa comercial possível, **não é requisito da opção B**. Não realizar assinatura sem autorização do proprietário.
