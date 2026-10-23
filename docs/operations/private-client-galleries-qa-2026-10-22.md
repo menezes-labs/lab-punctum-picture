@@ -75,3 +75,17 @@ A PR #13 permanece em draft, sem merge e com PRIVATE_GALLERIES_ENABLED=false em 
 - O resultado confirma que **Workers Paid não está ativo** nesta conta em 2026-10-22, diferentemente de R2 Paid; qualquer assinatura é decisão comercial exclusiva do proprietário.
 
 **NO-GO mantido:** habilitar Workers Paid mediante autorização, repetir preview até o relatório `passed`, homologar UI autenticada em 360/390/768 e em Android/iPhone reais, aprovar política LGPD de retenção e obter autorização explícita de merge e produção. Não reduzir PBKDF2/310000 nem desativar o limite de CPU para contornar o plano atual.
+
+## Piloto Workers Free — alternativa B, 2026-10-23 UTC
+
+**Evidência:** [GitHub Actions #39884123860](https://github.com/menezesx2k26-byte/lab-punctum-picture/actions/runs/39884123860); artefato sanitizado `private-galleries-preview-report` (ID `12472306438`). Executado a partir da PR #13 em recursos isolados, no Worker `punctum-picture-albums-qa`. **Produção não alterada, Workers Paid não contratado.**
+
+- CI da execução: **154 testes aprovados em 39 arquivos**, typecheck, lint e build concluídos com sucesso.
+- Deploy real do preview no **Workers Free** sem `limits.cpu_ms`: concluído.
+- Criação de conta `CLIENT_AUTH_MODE=access` sem senha PBKDF2 local e rotas legadas de senha bloqueadas.
+- 10 uploads JPG/PNG/WebP **no piloto foram PNGs fictícios**, com rejeição de carga adulterada, publicação, favoritos, download com permissão, mídia pública negada e revogação.
+- Restauração de **24 linhas D1** e **10 originais R2**, conferindo os bytes de cada objeto, verificada no preview restaurado; depois disso arquivamento, reset de sessão e desativação também passaram.
+- Campo do artefato `productionTouched: false`; `authMode: "access"`; `status: "partial-access-setup-required"`; `accessProviderTested: false`.
+- **Limite do piloto:** o acesso ao cliente no cenário E2E foi feito com sessão HMAC sintética criada pelo script usando segredo aleatório exclusivamente no QA isolado. **Não** validou o e-mail OTP e a assinatura JWT de uma aplicação Cloudflare Access **real**. Os testes criptográficos locais de JWT assinado/issuer/audience passaram, mas não substituem o login remoto de verdade.
+
+**NO-GO operacional permanece:** configurar aplicativo Access Self-hosted de QA limitado a `/albuns/entrar`, copiar o team domain e audience para o ambiente preview, fazer login por código OTP em e-mail de teste e verificar bloqueio de e-mails desconhecidos/desativados. Ainda precisam de QA móvel real, LGPD aprovada, backup rotineiro R2 e aprovação de merge/ativação. O custo Workers Paid deixa de ser gate da opção B **para o que foi testado**; qualquer nova rota sob `exceededCpu` deve ser corrigida antes de produção, sem supor que todo tráfego futuro caberá no Free.
