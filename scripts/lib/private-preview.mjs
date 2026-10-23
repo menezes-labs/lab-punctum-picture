@@ -29,14 +29,17 @@ export function privatePreviewConfig(
   )
     throw new Error("Preview requires its dedicated workers.dev origin.");
   const vars = { ...base.vars };
+  const authMode = vars.CLIENT_AUTH_MODE ?? "password";
+  if (!["password", "access"].includes(authMode))
+    throw new Error("Invalid private auth mode.");
   for (const key of Object.keys(vars))
     if (/SECRET|PASSWORD|TOKEN|KEY/.test(key)) delete vars[key];
-  return {
+  const config = {
     ...base,
     name: PRIVATE_PREVIEW_NAMES.worker,
     account_id: "257bca437616da74ece1ce4bbaf0bd89",
     workers_dev: true,
-    limits: { cpu_ms: 2000 },
+    ...(authMode === "password" ? { limits: { cpu_ms: 2000 } } : {}),
     preview_urls: false,
     routes: [],
     triggers: { crons: [] },
@@ -44,6 +47,13 @@ export function privatePreviewConfig(
       ...vars,
       ENVIRONMENT: "preview",
       PRIVATE_GALLERIES_ENABLED: "true",
+      CLIENT_AUTH_MODE: authMode,
+      ...(authMode === "access"
+        ? {
+            CLIENT_ACCESS_TEAM_DOMAIN: "qa-placeholder.cloudflareaccess.com",
+            CLIENT_ACCESS_AUD: "qa-access-not-configured",
+          }
+        : {}),
       SITE_ORIGIN: url.origin,
       PUBLIC_SITE_URL: url.origin,
       ADMIN_ALLOWED_EMAILS: "qa@punctum.invalid",
@@ -69,6 +79,8 @@ export function privatePreviewConfig(
     ],
     images: { binding: "IMAGES" },
   };
+  if (authMode === "access") delete config.limits;
+  return config;
 }
 
 export async function waitForPreviewStatus({
