@@ -13,10 +13,8 @@ import {
   serializeGallery,
   serializeImage,
 } from "../client/repository";
-import {
-  generateTemporaryPassword,
-  hashClientPassword,
-} from "../client/passwords";
+import { generateTemporaryPassword } from "../client/passwords";
+import { hashClientPasswordWithProvider } from "../client/password-provider";
 import { privateJson } from "../client/response";
 import { assertAllowedOrigin, requireAdmin } from "../utils/auth";
 import { writeAudit } from "../utils/audit";
@@ -75,7 +73,7 @@ export async function handleClientAdminApi(
       mode === "password" ? generateTemporaryPassword() : undefined;
     const credential =
       temporaryPassword
-        ? await hashClientPassword(temporaryPassword)
+        ? await hashClientPasswordWithProvider(temporaryPassword, env)
         : { passwordHash: "ACCESS_ONLY", passwordSalt: "ACCESS_ONLY", passwordIterations: 310_000 };
     const clientId = crypto.randomUUID();
     const now = new Date().toISOString();
