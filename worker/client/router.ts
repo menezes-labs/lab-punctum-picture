@@ -7,6 +7,8 @@ import { handleClientGalleryUploadApi } from "../api/client-gallery-upload";
 import { handleClientGalleriesApi } from "../api/client-galleries";
 import { servePrivateGalleryImage } from "../media/private-gallery";
 import { requireClient } from "./auth";
+import { clientAuthMode } from "./auth-mode";
+import { handleClientAccessEntry } from "./access";
 import { requireDb } from "../utils/env";
 import { apiError } from "../utils/response";
 import { envString } from "../utils/env";
@@ -47,6 +49,12 @@ export async function handlePrivateGalleryRoutes(
   try {
     if (!isPrivateGalleriesEnabled(env))
       throw new AppError(404, "NOT_FOUND", "Recurso não encontrado.");
+    if (clientAuthMode(env) === "access") {
+      if (url.pathname === "/albuns/entrar")
+        return await handleClientAccessEntry(request, env);
+      if (url.pathname === "/albuns/trocar-senha")
+        throw new AppError(404, "NOT_FOUND", "Recurso não encontrado.");
+    }
     const page = await protectClientPage(request, url, env);
     if (page) return page;
     const session = await handleClientSessionApi(request, url, env);
