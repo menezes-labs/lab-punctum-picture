@@ -58,6 +58,7 @@
   "vars": {
     "ENVIRONMENT": "production",
     "PRIVATE_GALLERIES_ENABLED": "false",
+    "CLIENT_AUTH_MODE": "access",
     "SITE_ORIGIN": "https://punctumpicture.com",
     "PUBLIC_SITE_URL": "https://punctumpicture.com",
     "PUBLIC_WHATSAPP_E164": "UNSPECIFIED",
@@ -79,6 +80,7 @@
       "vars": {
         "ENVIRONMENT": "preview",
         "PRIVATE_GALLERIES_ENABLED": "false",
+    "CLIENT_AUTH_MODE": "access",
         "SITE_ORIGIN": "https://preview.punctumpicture.com",
         "PUBLIC_SITE_URL": "https://preview.punctumpicture.com",
         "PUBLIC_WHATSAPP_E164": "UNSPECIFIED",
@@ -127,6 +129,7 @@
       "vars": {
         "ENVIRONMENT": "production",
     "PRIVATE_GALLERIES_ENABLED": "false",
+    "CLIENT_AUTH_MODE": "access",
         "SITE_ORIGIN": "https://punctumpicture.com",
         "PUBLIC_SITE_URL": "https://punctumpicture.com",
         "PUBLIC_WHATSAPP_E164": "UNSPECIFIED",
