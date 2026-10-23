@@ -5,7 +5,7 @@ import {
   clearClientSessionCookie,
   requireClient,
 } from "../client/auth";
-import { hashClientPassword, verifyClientPassword } from "../client/passwords";
+import { hashClientPasswordWithProvider, verifyClientPasswordWithProvider } from "../client/password-provider";
 import { getClientByEmail, getActiveClient } from "../client/repository";
 import { privateJson, privateResponse } from "../client/response";
 import { assertAllowedOrigin } from "../utils/auth";
@@ -83,7 +83,7 @@ export async function handleClientSessionApi(
     const input = await parseJson(request, loginSchema);
     await loginLimit(request, db, input.email);
     const account = await getClientByEmail(db, input.email);
-    const valid = await verifyClientPassword(input.password, account ?? DUMMY);
+    const valid = await verifyClientPasswordWithProvider(input.password, account ?? DUMMY, env);
     if (!account || account.disabledAt || !valid)
       throw new AppError(
         401,
@@ -115,13 +115,13 @@ export async function handleClientSessionApi(
     const account = await getActiveClient(db, identity.id);
     if (!account)
       throw new AppError(401, "CLIENT_UNAUTHORIZED", "Entre para continuar.");
-    if (await verifyClientPassword(input.password, account))
+    if (await verifyClientPasswordWithProvider(input.password, account, env))
       throw new AppError(
         400,
         "SAME_PASSWORD",
         "Escolha uma senha diferente da senha atual.",
       );
-    const c = await hashClientPassword(input.password);
+    const c = await hashClientPasswordWithProvider(input.password, env);
     const updated = await db
       .prepare(
         `UPDATE client_accounts SET password_hash=?,password_salt=?,password_iterations=?,
