@@ -141,7 +141,7 @@ export async function handleClientAdminApi(
       return privateJson({ ok: true, authMode: mode });
     }
     const temporaryPassword = generateTemporaryPassword();
-    const c = await hashClientPassword(temporaryPassword);
+    const c = await hashClientPasswordWithProvider(temporaryPassword, env);
     await db
       .prepare(
         `UPDATE client_accounts SET password_hash=?,password_salt=?,password_iterations=?,
