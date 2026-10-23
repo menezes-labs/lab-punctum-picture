@@ -65,8 +65,6 @@ jobs:
           PRIVATE_GALLERY_PREVIEW: "true"
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_GLOBAL_API_KEY: ${{ secrets.CLOUDFLARE_GLOBAL_API_KEY }}
-          CLOUDFLARE_AUTH_EMAIL: ${{ secrets.CLOUDFLARE_AUTH_EMAIL }}
       - name: Save Access QA discovery report
         if: always() && inputs.environment == 'preview'
         uses: actions/upload-artifact@v4
