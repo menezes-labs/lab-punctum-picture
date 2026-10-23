@@ -42,6 +42,26 @@ describe("isolated gallery preview", () => {
       ),
     ).toBe(true);
   });
+  it("keeps Workers Free preview without a paid CPU limit for Access login", () => {
+    const config = privatePreviewConfig(
+      {
+        vars: {
+          CLIENT_AUTH_MODE: "access",
+          CLIENT_ACCESS_TEAM_DOMAIN: "production.cloudflareaccess.com",
+          CLIENT_ACCESS_AUD: "production-audience",
+        },
+        limits: { cpu_ms: 2000 },
+      },
+      {
+        databaseId: "22222222-2222-4222-8222-222222222222",
+        origin: "https://qa.example.workers.dev",
+      },
+    );
+    expect(config.limits).toBeUndefined();
+    expect(config.vars.CLIENT_AUTH_MODE).toBe("access");
+    expect(config.vars.CLIENT_ACCESS_TEAM_DOMAIN).toContain("qa-placeholder.");
+    expect(config.vars.CLIENT_ACCESS_AUD).toBe("qa-access-not-configured");
+  });
   it("refuses production IDs, origins and invalid restoration bindings", () => {
     for (const databaseId of [
       "22697f13-7484-41e3-9441-f7b902c6577a",
