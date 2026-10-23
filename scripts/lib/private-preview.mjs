@@ -12,7 +12,7 @@ const PRODUCTION_DATABASES = new Set([
 ]);
 export function privatePreviewConfig(
   base,
-  { databaseId, origin, restored = false, accessTeamDomain, accessAudience },
+  { databaseId, origin, restored = false, accessTeamDomain = undefined, accessAudience = undefined },
 ) {
   if (
     !/^[0-9a-f-]{36}$/i.test(databaseId ?? "") ||
