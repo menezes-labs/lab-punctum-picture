@@ -9,15 +9,8 @@ if (process.env.CLOUDFLARE_ACCOUNT_ID !== account) {
   throw new Error("Unexpected Cloudflare account; Access discovery aborted.");
 }
 const token = process.env.CLOUDFLARE_API_TOKEN;
-const globalKey = process.env.CLOUDFLARE_GLOBAL_API_KEY;
-const email = process.env.CLOUDFLARE_AUTH_EMAIL;
-const headers =
-  globalKey && email
-    ? { "X-Auth-Key": globalKey, "X-Auth-Email": email }
-    : token
-      ? { Authorization: "Bearer " + token }
-      : null;
-if (!headers) throw new Error("No Cloudflare API credential available.");
+if (!token) throw new Error("No scoped Cloudflare API token available.");
+const headers = { Authorization: "Bearer " + token };
 
 const api = "https://api.cloudflare.com/client/v4/accounts/" + account;
 const endpoints = {
@@ -26,7 +19,7 @@ const endpoints = {
   identityProviders: "/access/identity_providers",
 };
 const report = {
-  mode: globalKey && email ? "global-api-key" : "api-token",
+  mode: "api-token",
   productionTouched: false,
   readOnly: true,
   access: {},
