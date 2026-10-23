@@ -13,6 +13,7 @@ import { requireDb } from "../utils/env";
 import { AppError } from "../utils/errors";
 import { parseJson } from "../client/validation";
 import { writeAudit } from "../utils/audit";
+import { clientAuthMode } from "../client/auth-mode";
 
 const loginSchema = z
   .object({
@@ -70,12 +71,15 @@ export async function handleClientSessionApi(
     return null;
   assertAllowedOrigin(request, env);
   const db = requireDb(env);
+  const mode = clientAuthMode(env);
   if (url.pathname === "/api/client/session" && request.method === "DELETE")
     return privateJson(
-      { ok: true },
+      { ok: true, logoutUrl: mode === "access" ? "/cdn-cgi/access/logout" : "/albuns/entrar" },
       { headers: { "Set-Cookie": clearClientSessionCookie() } },
     );
   if (url.pathname === "/api/client/session" && request.method === "POST") {
+    if (mode === "access")
+      throw new AppError(405, "METHOD_NOT_ALLOWED", "Use o acesso por e-mail.");
     const input = await parseJson(request, loginSchema);
     await loginLimit(request, db, input.email);
     const account = await getClientByEmail(db, input.email);
@@ -92,6 +96,8 @@ export async function handleClientSessionApi(
       { headers: { "Set-Cookie": clientSessionCookie(token) } },
     );
   }
+  if (url.pathname === "/api/client/password" && mode === "access")
+    throw new AppError(405, "METHOD_NOT_ALLOWED", "Use o acesso por e-mail.");
   const identity = await requireClient(request, env, db, {
     allowPasswordChange: true,
   });
@@ -99,6 +105,7 @@ export async function handleClientSessionApi(
     return privateJson({
       client: { id: identity.id, name: identity.name },
       mustChangePassword: identity.mustChangePassword,
+      authMode: mode,
     });
   if (url.pathname === "/api/client/password" && request.method === "POST") {
     const input = await parseJson(
